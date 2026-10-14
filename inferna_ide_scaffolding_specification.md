@@ -182,7 +182,9 @@ tasks {
             "-XX:+UseG1GC",
             "-Dawt.useSystemAAFontSettings=on",
             "-Dgradle.compatibility.update.interval=0",
-            "-Dgradle.compatibility.config.url="
+            "-Dgradle.compatibility.config.url=",
+            "-Didea.fatal.error.notification=disabled",
+            "-Didea.is.internal=false"
         )
     }
 }
@@ -346,17 +348,29 @@ class InfernaLifecycleListener : AppLifecycleListener {
             logger.debug("AdvancedSettings ide.ui.theme.custom.islands not available: ${e.message}")
         }
 
-        applyDefaultThemeOnFirstRun()
+        runOnEdt {
+            applyDefaultThemeOnFirstRun()
+        }
     }
 
     override fun appStarted() {
         logger.info("Inferna Platform active. All subsystems dispatched.")
-        // Retry applying theme and editor scheme in case extensions were still loading during appFrameCreated
-        applyDefaultThemeOnFirstRun()
+        runOnEdt {
+            applyDefaultThemeOnFirstRun()
 
-        val lafManager = LafManager.getInstance()
-        if (lafManager.currentUIThemeLookAndFeel?.name == INFERNA_THEME_NAME) {
-            lafManager.updateUI()
+            val lafManager = LafManager.getInstance()
+            if (lafManager.currentUIThemeLookAndFeel?.name == INFERNA_THEME_NAME) {
+                lafManager.updateUI()
+            }
+        }
+    }
+
+    private fun runOnEdt(action: () -> Unit) {
+        val app = ApplicationManager.getApplication()
+        if (app != null && !app.isDispatchThread) {
+            app.invokeLater(action, ModalityState.any())
+        } else {
+            action()
         }
     }
 

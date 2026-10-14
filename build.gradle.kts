@@ -114,7 +114,9 @@ tasks {
             "-XX:+UseG1GC",
             "-Dawt.useSystemAAFontSettings=on",
             "-Dgradle.compatibility.update.interval=0",
-            "-Dgradle.compatibility.config.url="
+            "-Dgradle.compatibility.config.url=",
+            "-Didea.fatal.error.notification=disabled",
+            "-Didea.is.internal=false"
         )
     }
 }

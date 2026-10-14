@@ -3,9 +3,10 @@ package org.inferna.core
 import com.intellij.ide.AppLifecycleListener
 import com.intellij.ide.ui.LafManager
 import com.intellij.ide.util.PropertiesComponent
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.editor.colors.EditorColorsManager
-
 import com.intellij.openapi.options.advanced.AdvancedSettings
 
 private const val INFERNA_THEME_NAME = "Inferna Visceral Dark"
@@ -36,17 +37,29 @@ class InfernaLifecycleListener : AppLifecycleListener {
             logger.debug("AdvancedSettings ide.ui.theme.custom.islands not available: ${e.message}")
         }
 
-        applyDefaultThemeOnFirstRun()
+        runOnEdt {
+            applyDefaultThemeOnFirstRun()
+        }
     }
 
     override fun appStarted() {
         logger.info("Inferna Platform active. All subsystems dispatched.")
-        // Retry applying theme and editor scheme in case extensions were still loading during appFrameCreated
-        applyDefaultThemeOnFirstRun()
+        runOnEdt {
+            applyDefaultThemeOnFirstRun()
 
-        val lafManager = LafManager.getInstance()
-        if (lafManager.currentUIThemeLookAndFeel?.name == INFERNA_THEME_NAME) {
-            lafManager.updateUI()
+            val lafManager = LafManager.getInstance()
+            if (lafManager.currentUIThemeLookAndFeel?.name == INFERNA_THEME_NAME) {
+                lafManager.updateUI()
+            }
+        }
+    }
+
+    private fun runOnEdt(action: () -> Unit) {
+        val app = ApplicationManager.getApplication()
+        if (app != null && !app.isDispatchThread) {
+            app.invokeLater(action, ModalityState.any())
+        } else {
+            action()
         }
     }
 
