@@ -1,0 +1,60 @@
+{
+  "name": "Inferna Visceral",
+  "author": "Inferna Project",
+  "dark": true,
+  "editorScheme": "/theme/inferna.theme.json",
+  "colors": {
+    "inferna.bg.dark": "#0A0405",
+    "inferna.bg.panel": "#140709",
+    "inferna.bg.active": "#1F0B0E",
+    "inferna.accent.arterial": "#B81424",
+    "inferna.accent.crimson": "#E6192E",
+    "inferna.fg.light": "#E3D1D1",
+    "inferna.fg.muted": "#7A6363"
+  },
+  "ui": {
+    "*": {
+      "background": "#0A0405",
+      "foreground": "#E3D1D1",
+      "selectionBackground": "#1F0B0E",
+      "selectionForeground": "#FFFFFF",
+      "selectionInactiveBackground": "#140709",
+      "borderColor": "#2D0E12",
+      "separatorColor": "#2D0E12"
+    },
+    "Editor": {
+      "background": "#0A0405",
+      "foreground": "#E3D1D1",
+      "shortcutForeground": "#E6192E"
+    },
+    "EditorTabs": {
+      "background": "#0A0405",
+      "underHoverBackground": "#140709",
+      "underHoverForeground": "#E3D1D1",
+      "activeBackground": "#1F0B0E",
+      "activeForeground": "#FFFFFF",
+      "underlineColor": "#B81424",
+      "underlineHeight": 2
+    },
+    "ToolWindow": {
+      "Header": {
+        "background": "#140709",
+        "inactiveBackground": "#0A0405"
+      },
+      "Button": {
+        "selectedBackground": "#1F0B0E",
+        "selectedForeground": "#FFFFFF"
+      }
+    },
+    "Tree": {
+      "background": "#0A0405",
+      "selectionBackground": "#1F0B0E",
+      "selectionForeground": "#FFFFFF"
+    },
+    "StatusBar": {
+      "background": "#0D0507",
+      "foreground": "#7A6363",
+      "borderColor": "#2D0E12"
+    }
+  }
+}

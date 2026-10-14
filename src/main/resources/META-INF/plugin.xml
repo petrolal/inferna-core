@@ -1,0 +1,35 @@
+<idea-plugin>
+    <id>org.inferna.ide</id>
+    <name>Inferna IDE</name>
+    <vendor>Inferna Project</vendor>
+
+    <description><![CDATA[
+      Custom biopunk developer platform and JVM tooling with native Kotlin and Spring support.
+    ]]></description>
+
+    <!-- Essential platform dependencies -->
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.java</depends>
+    <depends>org.jetbrains.kotlin</depends>
+
+    <applicationListeners>
+        <listener class="org.inferna.core.InfernaLifecycleListener"
+                  topic="com.intellij.ide.AppLifecycleListener"/>
+    </applicationListeners>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Biopunk Theme Provider -->
+        <themeProvider id="org.inferna.theme.visceral" path="/theme/inferna.theme.json"/>
+
+        <!-- Universal Spring Bean LineMarker (Polyglot: Java & Kotlin via UAST) -->
+        <codeInsight.lineMarkerProvider
+            language="UAST"
+            implementationClass="org.inferna.spring.SpringBeanLineMarkerProvider"/>
+
+        <!-- Right Docked Dashboard ToolWindow -->
+        <toolWindow id="Inferna Dashboard"
+                    anchor="right"
+                    canCloseContent="true"
+                    factoryClass="org.inferna.dashboard.InfernaDashboardToolWindowFactory"/>
+    </extensions>
+</idea-plugin>
