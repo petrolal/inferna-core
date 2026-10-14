@@ -53,12 +53,12 @@ dependencyResolutionManagement {
 ### `gradle.properties`
 ```properties
 # Kotlin & JVM
-kotlin.version=2.0.20
+kotlin.version=2.2.20
 java.version=21
 
 # IntelliJ Platform SDK
-platformVersion=2024.2.3
-platformPluginVersion=2.0.1
+platformVersion=2025.1
+platformPluginVersion=2.2.1
 
 # JVM Memory and Optimization for Platform SDK Builds
 org.gradle.jvmargs=-Xmx4g -XX:+UseG1GC -Dfile.encoding=UTF-8
@@ -68,10 +68,16 @@ org.gradle.caching=true
 
 ### `build.gradle.kts`
 ```kotlin
+import java.io.File
+import java.util.Base64
+import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
+import java.util.zip.ZipOutputStream
+
 plugins {
     id("java")
-    kotlin("jvm") version "2.0.20"
-    id("org.jetbrains.intellij.platform") version "2.0.1"
+    kotlin("jvm") version "2.2.20"
+    id("org.jetbrains.intellij.platform") version "2.2.1"
 }
 
 group = "org.inferna"
@@ -81,12 +87,24 @@ repositories {
     mavenCentral()
     intellijPlatform {
         defaultRepositories()
+        intellijDependencies()
     }
 }
 
+val localIdeDir = providers.gradleProperty("localPlatformPath").orNull?.let { file(it) }
+    ?: file("/run/current-system/sw/bin/intellij-idea-oss").takeIf { it.exists() }?.let { binary ->
+        binary.toPath().toRealPath().parent?.parent?.toFile()?.takeIf { file ->
+            file.resolve("product-info.json").exists()
+        }
+    }
+
 dependencies {
     intellijPlatform {
-        intellijIdeaCommunity(providers.gradleProperty("platformVersion"))
+        if (localIdeDir != null) {
+            local(localIdeDir)
+        } else {
+            intellijIdeaCommunity(providers.gradleProperty("platformVersion"))
+        }
         bundledPlugin("com.intellij.java")
         bundledPlugin("org.jetbrains.kotlin")
         pluginVerifier()
@@ -111,8 +129,8 @@ intellijPlatform {
             url.set("https://github.com/inferna")
         }
         ideaVersion {
-            sinceBuild.set("242")
-            untilBuild.set("243.*")
+            sinceBuild.set("251")
+            untilBuild.set("253.*")
         }
     }
 
@@ -122,8 +140,50 @@ intellijPlatform {
 }
 
 tasks {
+    buildSearchableOptions {
+        enabled = false
+    }
+
+    named("initializeIntellijPlatformPlugin") {
+        doLast {
+            if (localIdeDir != null) {
+                val agentJar = layout.buildDirectory.file("coroutines-javaagent.jar").get().asFile
+                if (agentJar.exists()) {
+                    val classEntry = "kotlinx/coroutines/debug/AgentPremain.class"
+                    val b64 = "yv66vgAAAEEADwoAAgADBwAEDAAFAAYBABBqYXZhL2xhbmcvT2JqZWN0AQAGPGluaXQ+AQADKClWBwAIAQAla290bGlueC9jb3JvdXRpbmVzL2RlYnVnL0FnZW50UHJlbWFpbgEABENvZGUBAA9MaW5lTnVtYmVyVGFibGUBAAdwcmVtYWluAQA7KExqYXZhL2xhbmcvU3RyaW5nO0xqYXZhL2xhbmcvaW5zdHJ1bWVudC9JbnN0cnVtZW50YXRpb247KVYBAApTb3VyY2VGaWxlAQARQWdlbnRQcmVtYWluLmphdmEAIQAHAAIAAAAAAAIAAQAFAAYAAQAJAAAAHQABAAEAAAAFKrcAAbEAAAABAAoAAAAGAAEAAAADAAkACwAMAAEACQAAABkAAAACAAAAAbEAAAABAAoAAAAGAAEAAAAEAAEADQAAAAIADg=="
+                    val classBytes = Base64.getDecoder().decode(b64)
+                    val tempJar = File(agentJar.parentFile, "coroutines-javaagent-temp.jar")
+                    ZipInputStream(agentJar.inputStream()).use { zin ->
+                        ZipOutputStream(tempJar.outputStream()).use { zout ->
+                            var entry = zin.nextEntry
+                            var hasClass = false
+                            while (entry != null) {
+                                zout.putNextEntry(ZipEntry(entry.name))
+                                zin.copyTo(zout)
+                                if (entry.name == classEntry) hasClass = true
+                                entry = zin.nextEntry
+                            }
+                            if (!hasClass) {
+                                zout.putNextEntry(ZipEntry(classEntry))
+                                zout.write(classBytes)
+                            }
+                        }
+                    }
+                    tempJar.copyTo(agentJar, overwrite = true)
+                    tempJar.delete()
+                }
+            }
+        }
+    }
+
     runIde {
-        jvmArgs("-Xmx4g", "-XX:+UseG1GC", "-Dawt.useSystemAAFontSettings=on")
+        jvmArgs(
+            "-Xmx4g",
+            "-XX:+UseG1GC",
+            "-Dawt.useSystemAAFontSettings=on",
+            "-Dgradle.compatibility.update.interval=0",
+            "-Dgradle.compatibility.config.url="
+        )
     }
 }
 ```
@@ -154,8 +214,9 @@ tasks {
     </applicationListeners>
 
     <extensions defaultExtensionNs="com.intellij">
-        <!-- Biopunk Theme Provider -->
-        <themeProvider id="org.inferna.theme.visceral" path="/theme/inferna.theme.json"/>
+        <!-- Biopunk Theme Provider & Editor Color Scheme -->
+        <themeProvider id="org.inferna.theme.visceral" path="/theme/inferna.theme.json" targetUi="islands"/>
+        <bundledColorScheme id="Inferna Visceral Dark" path="/theme/inferna.xml"/>
 
         <!-- Universal Spring Bean LineMarker (Polyglot: Java & Kotlin via UAST) -->
         <codeInsight.lineMarkerProvider
@@ -165,8 +226,11 @@ tasks {
         <!-- Right Docked Dashboard ToolWindow -->
         <toolWindow id="Inferna Dashboard"
                     anchor="right"
-                    canCloseContent="true"
                     factoryClass="org.inferna.dashboard.InfernaDashboardToolWindowFactory"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="org.jetbrains.kotlin">
+        <supportsKotlinPluginMode supportsK1="true" supportsK2="true"/>
     </extensions>
 </idea-plugin>
 ```
@@ -174,63 +238,68 @@ tasks {
 ### `src/main/resources/theme/inferna.theme.json`
 ```json
 {
-  "name": "Inferna Visceral",
-  "author": "Inferna Project",
+  "name": "Inferna Visceral Dark",
   "dark": true,
-  "editorScheme": "/theme/inferna.theme.json",
+  "author": "Inferna Project",
+  "editorScheme": "/theme/inferna.xml",
+  "parentTheme": "ExperimentalDark",
   "colors": {
-    "inferna.bg.dark": "#0A0405",
-    "inferna.bg.panel": "#140709",
-    "inferna.bg.active": "#1F0B0E",
-    "inferna.accent.arterial": "#B81424",
-    "inferna.accent.crimson": "#E6192E",
-    "inferna.fg.light": "#E3D1D1",
-    "inferna.fg.muted": "#7A6363"
+    "CanvasVoid": "#070203",
+    "IslandPanel": "#100507",
+    "IslandEditor": "#0a0405",
+    "IslandBorder": "#1c0a0e",
+    "ArterialRed": "#b81424",
+    "ArterialBright": "#ff1e38",
+    "VisceralSelection": "#3d141a",
+    "NecroticText": "#e6d5d5",
+    "NecroticMuted": "#8f6f73",
+    "BorderDark": "#240d12",
+    "BorderLight": "#2d1116",
+    "BorderTransparent": "#00000000"
   },
   "ui": {
     "*": {
-      "background": "#0A0405",
-      "foreground": "#E3D1D1",
-      "selectionBackground": "#1F0B0E",
-      "selectionForeground": "#FFFFFF",
-      "selectionInactiveBackground": "#140709",
-      "borderColor": "#2D0E12",
-      "separatorColor": "#2D0E12"
+      "background": "#100507",
+      "foreground": "#e6d5d5",
+      "infoForeground": "#8f6f73",
+      "selectionBackground": "#3d141a",
+      "selectionForeground": "#ffffff",
+      "selectionInactiveBackground": "#240d12",
+      "disabledBackground": "#100507",
+      "disabledForeground": "#422127",
+      "acceleratorForeground": "#8f6f73",
+      "acceleratorSelectionForeground": "#ffffff",
+      "errorForeground": "#ff334b",
+      "borderColor": "#240d12",
+      "separatorColor": "#240d12"
     },
-    "Editor": {
-      "background": "#0A0405",
-      "foreground": "#E3D1D1",
-      "shortcutForeground": "#E6192E"
-    },
-    "EditorTabs": {
-      "background": "#0A0405",
-      "underHoverBackground": "#140709",
-      "underHoverForeground": "#E3D1D1",
-      "activeBackground": "#1F0B0E",
-      "activeForeground": "#FFFFFF",
-      "underlineColor": "#B81424",
-      "underlineHeight": 2
-    },
-    "ToolWindow": {
-      "Header": {
-        "background": "#140709",
-        "inactiveBackground": "#0A0405"
-      },
-      "Button": {
-        "selectedBackground": "#1F0B0E",
-        "selectedForeground": "#FFFFFF"
+
+    "Islands": 1,
+    "Island": {
+      "arc": 20,
+      "arc.compact": 16,
+      "borderArcLength": 14,
+      "borderArcLength.compact": 10,
+      "borderWidth": 6,
+      "borderWidth.compact": 4,
+      "borderColor": "#100507",
+      "inactiveAlpha": 0.44,
+      "inactiveAlphaInStatusBar": {
+        "os.mac": 0.2,
+        "os.windows": 0.2,
+        "os.linux": 0.15
       }
     },
-    "Tree": {
-      "background": "#0A0405",
-      "selectionBackground": "#1F0B0E",
-      "selectionForeground": "#FFFFFF"
-    },
-    "StatusBar": {
-      "background": "#0D0507",
-      "foreground": "#7A6363",
-      "borderColor": "#2D0E12"
-    }
+
+    "MainWindow.background": "#070203",
+    "Borders.color": "#240d12",
+    "Borders.ContrastBorderColor": "#240d12",
+
+    "Component": { "arc": 8 },
+    "Button": { "arc": 8 },
+    "TextField": { "arc": 8 },
+    "Popup": { "arc": 8 },
+    "ProgressBar": { "arc": 8 }
   }
 }
 ```
@@ -244,20 +313,83 @@ tasks {
 package org.inferna.core
 
 import com.intellij.ide.AppLifecycleListener
+import com.intellij.ide.ui.LafManager
+import com.intellij.ide.util.PropertiesComponent
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.editor.colors.EditorColorsManager
+
+private const val INFERNA_THEME_NAME = "Inferna Visceral Dark"
+private const val DEFAULT_THEME_APPLIED_KEY = "org.inferna.theme.defaultApplied"
+private const val DEFAULT_SCHEME_APPLIED_KEY = "org.inferna.theme.editorSchemeApplied"
 
 class InfernaLifecycleListener : AppLifecycleListener {
     private val logger = Logger.getInstance(InfernaLifecycleListener::class.java)
 
+    init {
+        // Suppress remote Gradle JVM compatibility updates to prevent JavaVersion.parse crashes
+        // caused by newer Java versions (e.g. Java 25+) listed in JetBrains' online compatibility matrix.
+        System.setProperty("gradle.compatibility.update.interval", "0")
+        System.setProperty("gradle.compatibility.config.url", "")
+    }
+
     override fun appFrameCreated(commandLineArgs: MutableList<String>) {
+        System.setProperty("gradle.compatibility.update.interval", "0")
+        System.setProperty("gradle.compatibility.config.url", "")
         logger.info("=========================================")
         logger.info(" Inferna IDE Engine Initializing...     ")
         logger.info(" Runtime: JVM 21 | Target: Biopunk OS   ")
         logger.info("=========================================")
+
+        try {
+            AdvancedSettings.setBoolean("ide.ui.theme.custom.islands", true)
+        } catch (e: Throwable) {
+            logger.debug("AdvancedSettings ide.ui.theme.custom.islands not available: ${e.message}")
+        }
+
+        applyDefaultThemeOnFirstRun()
     }
 
     override fun appStarted() {
         logger.info("Inferna Platform active. All subsystems dispatched.")
+        // Retry applying theme and editor scheme in case extensions were still loading during appFrameCreated
+        applyDefaultThemeOnFirstRun()
+
+        val lafManager = LafManager.getInstance()
+        if (lafManager.currentUIThemeLookAndFeel?.name == INFERNA_THEME_NAME) {
+            lafManager.updateUI()
+        }
+    }
+
+    // Only forces the theme & color scheme on the very first launch of a fresh sandbox/install,
+    // so a user who later picks a different theme/scheme is never overridden again.
+    private fun applyDefaultThemeOnFirstRun() {
+        val properties = PropertiesComponent.getInstance()
+
+        if (!properties.getBoolean(DEFAULT_THEME_APPLIED_KEY, false)) {
+            val lafManager = LafManager.getInstance()
+            val infernaLaf = lafManager.installedThemes.firstOrNull { it.name == INFERNA_THEME_NAME }
+            if (infernaLaf != null) {
+                lafManager.setCurrentLookAndFeel(infernaLaf, true)
+                lafManager.updateUI()
+                properties.setValue(DEFAULT_THEME_APPLIED_KEY, true)
+                logger.info("Inferna Visceral applied as the default theme.")
+            } else {
+                logger.warn("Inferna Visceral theme not found among installed themes; default not applied.")
+            }
+        }
+
+        if (!properties.getBoolean(DEFAULT_SCHEME_APPLIED_KEY, false)) {
+            val editorColorsManager = EditorColorsManager.getInstance()
+            val infernaScheme = editorColorsManager.getScheme(INFERNA_THEME_NAME)
+                ?: editorColorsManager.allSchemes.firstOrNull { it.name == INFERNA_THEME_NAME }
+            if (infernaScheme != null) {
+                editorColorsManager.globalScheme = infernaScheme
+                properties.setValue(DEFAULT_SCHEME_APPLIED_KEY, true)
+                logger.info("Inferna Visceral Dark applied as the default editor color scheme.")
+            } else {
+                logger.warn("Inferna Visceral Dark editor color scheme not found among installed schemes.")
+            }
+        }
     }
 }
 ```

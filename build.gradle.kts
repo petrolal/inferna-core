@@ -1,7 +1,13 @@
+import java.io.File
+import java.util.Base64
+import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
+import java.util.zip.ZipOutputStream
+
 plugins {
     id("java")
-    kotlin("jvm") version "2.0.20"
-    id("org.jetbrains.intellij.platform") version "2.0.1"
+    kotlin("jvm") version "2.2.20"
+    id("org.jetbrains.intellij.platform") version "2.2.1"
 }
 
 group = "org.inferna"
@@ -17,15 +23,24 @@ repositories {
     }
 }
 
+val localIdeDir = providers.gradleProperty("localPlatformPath").orNull?.let { file(it) }
+    ?: file("/run/current-system/sw/bin/intellij-idea-oss").takeIf { it.exists() }?.let { binary ->
+        binary.toPath().toRealPath().parent?.parent?.toFile()?.takeIf { file ->
+            file.resolve("product-info.json").exists()
+        }
+    }
+
 dependencies {
     intellijPlatform {
-        intellijIdeaCommunity(providers.gradleProperty("platformVersion"))
+        if (localIdeDir != null) {
+            local(localIdeDir)
+        } else {
+            intellijIdeaCommunity(providers.gradleProperty("platformVersion"))
+        }
         bundledPlugin("com.intellij.java")
         bundledPlugin("org.jetbrains.kotlin")
         pluginVerifier()
         zipSigner()
-        // Provides the Java compiler dependency consumed by `instrumentCode`.
-        instrumentationTools()
     }
 
     testImplementation(kotlin("test"))
@@ -46,8 +61,8 @@ intellijPlatform {
             url.set("https://github.com/inferna")
         }
         ideaVersion {
-            sinceBuild.set("242")
-            untilBuild.set("243.*")
+            sinceBuild.set("251")
+            untilBuild.set("253.*")
         }
     }
 
@@ -57,7 +72,49 @@ intellijPlatform {
 }
 
 tasks {
+    buildSearchableOptions {
+        enabled = false
+    }
+
+    named("initializeIntellijPlatformPlugin") {
+        doLast {
+            if (localIdeDir != null) {
+                val agentJar = layout.buildDirectory.file("coroutines-javaagent.jar").get().asFile
+                if (agentJar.exists()) {
+                    val classEntry = "kotlinx/coroutines/debug/AgentPremain.class"
+                    val b64 = "yv66vgAAAEEADwoAAgADBwAEDAAFAAYBABBqYXZhL2xhbmcvT2JqZWN0AQAGPGluaXQ+AQADKClWBwAIAQAla290bGlueC9jb3JvdXRpbmVzL2RlYnVnL0FnZW50UHJlbWFpbgEABENvZGUBAA9MaW5lTnVtYmVyVGFibGUBAAdwcmVtYWluAQA7KExqYXZhL2xhbmcvU3RyaW5nO0xqYXZhL2xhbmcvaW5zdHJ1bWVudC9JbnN0cnVtZW50YXRpb247KVYBAApTb3VyY2VGaWxlAQARQWdlbnRQcmVtYWluLmphdmEAIQAHAAIAAAAAAAIAAQAFAAYAAQAJAAAAHQABAAEAAAAFKrcAAbEAAAABAAoAAAAGAAEAAAADAAkACwAMAAEACQAAABkAAAACAAAAAbEAAAABAAoAAAAGAAEAAAAEAAEADQAAAAIADg=="
+                    val classBytes = Base64.getDecoder().decode(b64)
+                    val tempJar = File(agentJar.parentFile, "coroutines-javaagent-temp.jar")
+                    ZipInputStream(agentJar.inputStream()).use { zin ->
+                        ZipOutputStream(tempJar.outputStream()).use { zout ->
+                            var entry = zin.nextEntry
+                            var hasClass = false
+                            while (entry != null) {
+                                zout.putNextEntry(ZipEntry(entry.name))
+                                zin.copyTo(zout)
+                                if (entry.name == classEntry) hasClass = true
+                                entry = zin.nextEntry
+                            }
+                            if (!hasClass) {
+                                zout.putNextEntry(ZipEntry(classEntry))
+                                zout.write(classBytes)
+                            }
+                        }
+                    }
+                    tempJar.copyTo(agentJar, overwrite = true)
+                    tempJar.delete()
+                }
+            }
+        }
+    }
+
     runIde {
-        jvmArgs("-Xmx4g", "-XX:+UseG1GC", "-Dawt.useSystemAAFontSettings=on")
+        jvmArgs(
+            "-Xmx4g",
+            "-XX:+UseG1GC",
+            "-Dawt.useSystemAAFontSettings=on",
+            "-Dgradle.compatibility.update.interval=0",
+            "-Dgradle.compatibility.config.url="
+        )
     }
 }
