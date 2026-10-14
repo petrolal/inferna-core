@@ -41,6 +41,21 @@ dependencies {
         }
         bundledPlugin("com.intellij.java")
         bundledPlugin("org.jetbrains.kotlin")
+
+        // Scala support (sbt, debugger, worksheets) - open source, Community-compatible.
+        // Version picked for platform build 253.x, matching sinceBuild/untilBuild above.
+        plugin("org.intellij.scala", "2025.3.41")
+
+        // Free Spring Boot tooling for Community Edition (Apache-2.0): real bean/context
+        // discovery via javaagent, Endpoints tool window, and a built-in HTTP client for
+        // running .http/.rest files - our REST API testing tool, since JetBrains' own HTTP
+        // Client is Ultimate-only. Version picked for platform build 253.x.
+        plugin("com.explyt.spring", "253.34.104")
+
+        // Official JetBrains Docker plugin - free (pricingModel=FREE) and Community-compatible.
+        // Version matches our exact local platform build (253.32098.x).
+        plugin("Docker", "253.32098.40")
+
         pluginVerifier()
         zipSigner()
     }
@@ -63,7 +78,11 @@ intellijPlatform {
             url.set("https://github.com/inferna")
         }
         ideaVersion {
-            sinceBuild.set("251")
+            // Matches the platform this plugin is actually built and run against locally
+            // (2025.3.4 / build 253.x, via the Nix-provided IDE picked up by localIdeDir).
+            // Declaring sinceBuild as low as 251 while never building/testing against it
+            // risked silently shipping 253-only APIs to users still on 2025.1.
+            sinceBuild.set("253")
             untilBuild.set("253.*")
         }
     }
