@@ -24,8 +24,6 @@ class InfernaLifecycleListener : AppLifecycleListener {
     }
 
     override fun appFrameCreated(commandLineArgs: MutableList<String>) {
-        System.setProperty("gradle.compatibility.update.interval", "0")
-        System.setProperty("gradle.compatibility.config.url", "")
         logger.info("=========================================")
         logger.info(" Inferna IDE Engine Initializing...     ")
         logger.info(" Runtime: JVM 21 | Target: Biopunk OS   ")
@@ -33,12 +31,8 @@ class InfernaLifecycleListener : AppLifecycleListener {
 
         try {
             AdvancedSettings.setBoolean("ide.ui.theme.custom.islands", true)
-        } catch (e: Throwable) {
+        } catch (e: Exception) {
             logger.debug("AdvancedSettings ide.ui.theme.custom.islands not available: ${e.message}")
-        }
-
-        runOnEdt {
-            applyDefaultThemeOnFirstRun()
         }
     }
 
@@ -46,11 +40,6 @@ class InfernaLifecycleListener : AppLifecycleListener {
         logger.info("Inferna Platform active. All subsystems dispatched.")
         runOnEdt {
             applyDefaultThemeOnFirstRun()
-
-            val lafManager = LafManager.getInstance()
-            if (lafManager.currentUIThemeLookAndFeel?.name == INFERNA_THEME_NAME) {
-                lafManager.updateUI()
-            }
         }
     }
 
@@ -81,19 +70,17 @@ class InfernaLifecycleListener : AppLifecycleListener {
             }
         }
 
-        val editorColorsManager = EditorColorsManager.getInstance()
-        val infernaScheme = editorColorsManager.getScheme(INFERNA_THEME_NAME)
-            ?: editorColorsManager.allSchemes.firstOrNull { it.name == INFERNA_THEME_NAME }
-        if (infernaScheme != null) {
-            val schemeNeedsApply = !properties.getBoolean(DEFAULT_SCHEME_APPLIED_KEY, false) ||
-                editorColorsManager.globalScheme.name == INFERNA_THEME_NAME
-            if (schemeNeedsApply) {
+        if (!properties.getBoolean(DEFAULT_SCHEME_APPLIED_KEY, false)) {
+            val editorColorsManager = EditorColorsManager.getInstance()
+            val infernaScheme = editorColorsManager.getScheme(INFERNA_THEME_NAME)
+                ?: editorColorsManager.allSchemes.firstOrNull { it.name == INFERNA_THEME_NAME }
+            if (infernaScheme != null) {
                 editorColorsManager.setGlobalScheme(infernaScheme)
                 properties.setValue(DEFAULT_SCHEME_APPLIED_KEY, true)
                 logger.info("Inferna Visceral Dark applied as the default editor color scheme.")
+            } else {
+                logger.warn("Inferna Visceral Dark editor color scheme not found among installed schemes.")
             }
-        } else {
-            logger.warn("Inferna Visceral Dark editor color scheme not found among installed schemes.")
         }
     }
 }

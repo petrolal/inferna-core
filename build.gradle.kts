@@ -1,4 +1,6 @@
 import java.io.File
+import java.time.format.DateTimeFormatter
+import java.time.LocalDateTime
 import java.util.Base64
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
@@ -81,6 +83,20 @@ tasks {
             if (localIdeDir != null) {
                 val agentJar = layout.buildDirectory.file("coroutines-javaagent.jar").get().asFile
                 if (agentJar.exists()) {
+                    // Some local IDE distributions resolve a kotlinx-coroutines-core version whose
+                    // coroutines-javaagent.jar is missing kotlinx/coroutines/debug/AgentPremain.class
+                    // (it was split out in later releases), which makes the IDE's debug-agent
+                    // attachment fail at startup with a NoClassDefFoundError. The class below is a
+                    // trivial no-op premain() (compiled from a single-method Java stub, embedded
+                    // here as Base64 because the source is not part of this project and recompiling
+                    // it per-build would require shipping a throwaway .java file just for this
+                    // backport). We only inject it when the real class is absent, so this is a no-op
+                    // on any jar that already ships a working AgentPremain.
+                    //
+                    //   package kotlinx.coroutines.debug;
+                    //   public class AgentPremain {
+                    //       public static void premain(String args, java.lang.instrument.Instrumentation inst) {}
+                    //   }
                     val classEntry = "kotlinx/coroutines/debug/AgentPremain.class"
                     val b64 = "yv66vgAAAEEADwoAAgADBwAEDAAFAAYBABBqYXZhL2xhbmcvT2JqZWN0AQAGPGluaXQ+AQADKClWBwAIAQAla290bGlueC9jb3JvdXRpbmVzL2RlYnVnL0FnZW50UHJlbWFpbgEABENvZGUBAA9MaW5lTnVtYmVyVGFibGUBAAdwcmVtYWluAQA7KExqYXZhL2xhbmcvU3RyaW5nO0xqYXZhL2xhbmcvaW5zdHJ1bWVudC9JbnN0cnVtZW50YXRpb247KVYBAApTb3VyY2VGaWxlAQARQWdlbnRQcmVtYWluLmphdmEAIQAHAAIAAAAAAAIAAQAFAAYAAQAJAAAAHQABAAEAAAAFKrcAAbEAAAABAAoAAAAGAAEAAAADAAkACwAMAAEACQAAABkAAAACAAAAAbEAAAABAAoAAAAGAAEAAAAEAAEADQAAAAIADg=="
                     val classBytes = Base64.getDecoder().decode(b64)
@@ -90,12 +106,16 @@ tasks {
                             var entry = zin.nextEntry
                             var hasClass = false
                             while (entry != null) {
+                                // Copy every existing entry as-is; if AgentPremain.class is already
+                                // present (e.g. a future jar ships it again) we keep that one and
+                                // skip our patch below, rather than risk writing a duplicate/stale copy.
                                 zout.putNextEntry(ZipEntry(entry.name))
                                 zin.copyTo(zout)
                                 if (entry.name == classEntry) hasClass = true
                                 entry = zin.nextEntry
                             }
                             if (!hasClass) {
+                                logger.lifecycle("Patching $agentJar: injecting stub $classEntry (missing from resolved jar)")
                                 zout.putNextEntry(ZipEntry(classEntry))
                                 zout.write(classBytes)
                             }
@@ -167,11 +187,17 @@ tasks {
                 addEntry("icon_32.png", icon32.readBytes())
                 addEntry("icon_16.png", icon16.readBytes())
 
+                val buildNumber = providers.gradleProperty("appInfoBuildNumber").get()
+                val majorVersion = providers.gradleProperty("appInfoMajorVersion").get()
+                val minorVersion = providers.gradleProperty("appInfoMinorVersion").get()
+                val majorReleaseDate = providers.gradleProperty("appInfoMajorReleaseDate").get()
+                val buildDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmm"))
+
                 val appInfoXml = """
                     <component xmlns="http://jetbrains.org/intellij/schema/application-info">
-                      <version major="2025" minor="3.4"/>
+                      <version major="$majorVersion" minor="$minorVersion"/>
                       <company name="Inferna Project" url="https://github.com/inferna"/>
-                      <build number="IC-253.32098.37" date="202610140000" majorReleaseDate="20251208" /> 
+                      <build number="$buildNumber" date="$buildDate" majorReleaseDate="$majorReleaseDate" />
                       <logo url="/artwork/inferna_splash.png"/>
                       <icon svg="/inferna.svg" svg-small="/inferna_16.svg"/>
                       <icon-eap svg="/inferna.svg" svg-small="/inferna_16.svg"/>

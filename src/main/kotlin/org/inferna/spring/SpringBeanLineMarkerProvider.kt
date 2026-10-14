@@ -3,12 +3,15 @@ package org.inferna.spring
 import com.intellij.codeInsight.daemon.RelatedItemLineMarkerInfo
 import com.intellij.codeInsight.daemon.RelatedItemLineMarkerProvider
 import com.intellij.codeInsight.navigation.NavigationGutterIconBuilder
-import com.intellij.openapi.util.IconLoader
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiClassType
 import com.intellij.psi.PsiElement
 import com.intellij.psi.search.GlobalSearchScope
-import com.intellij.psi.search.searches.AllClassesSearch
+import com.intellij.psi.search.searches.ClassInheritorsSearch
+import com.intellij.psi.util.CachedValueProvider
+import com.intellij.psi.util.CachedValuesManager
+import com.intellij.psi.util.PsiModificationTracker
+import org.inferna.icons.InfernaIcons
 import org.jetbrains.uast.UField
 import org.jetbrains.uast.toUElement
 
@@ -34,28 +37,35 @@ class SpringBeanLineMarkerProvider : RelatedItemLineMarkerProvider() {
 
         val fieldType = uField.type
         val targetClass = (fieldType as? PsiClassType)?.resolve() ?: return
-        val project = element.project
 
-        val candidates = mutableListOf<PsiClass>()
+        val candidates = findSpringBeanCandidates(targetClass)
+        if (candidates.isEmpty()) return
 
-        if (targetClass.isInterface) {
-            AllClassesSearch.search(GlobalSearchScope.projectScope(project), project).forEach { psiClass ->
-                if (psiClass.isInheritor(targetClass, true) && hasSpringStereotype(psiClass)) {
-                    candidates.add(psiClass)
-                }
+        val anchor = uField.sourcePsi?.firstChild ?: element
+        val lineMarker = NavigationGutterIconBuilder.create(InfernaIcons.SpringBean)
+            .setTargets(candidates)
+            .setTooltipText("Inferna: Navigate to Spring Bean Declaration")
+            .createLineMarkerInfo(anchor)
+
+        result.add(lineMarker)
+    }
+
+    // Uses the class hierarchy index (ClassInheritorsSearch) instead of scanning every class in
+    // the project, and caches the result per target PsiClass so repeated highlight passes over the
+    // same @Autowired field type don't re-run the search on every keystroke.
+    private fun findSpringBeanCandidates(targetClass: PsiClass): List<PsiClass> {
+        return CachedValuesManager.getCachedValue(targetClass) {
+            val candidates = if (targetClass.isInterface) {
+                val scope = GlobalSearchScope.projectScope(targetClass.project)
+                ClassInheritorsSearch.search(targetClass, scope, true)
+                    .filter { hasSpringStereotype(it) }
+                    .toList()
+            } else if (hasSpringStereotype(targetClass)) {
+                listOf(targetClass)
+            } else {
+                emptyList()
             }
-        } else if (hasSpringStereotype(targetClass)) {
-            candidates.add(targetClass)
-        }
-
-        if (candidates.isNotEmpty()) {
-            val anchor = uField.sourcePsi?.firstChild ?: element
-            val lineMarker = NavigationGutterIconBuilder.create(IconLoader.getIcon("/icons/springBeanGutter.svg", javaClass))
-                .setTargets(candidates)
-                .setTooltipText("Inferna: Navigate to Spring Bean Declaration")
-                .createLineMarkerInfo(anchor)
-
-            result.add(lineMarker)
+            CachedValueProvider.Result.create(candidates, PsiModificationTracker.MODIFICATION_COUNT)
         }
     }
 

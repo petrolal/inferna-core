@@ -4,19 +4,31 @@ import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
+import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPanel
 import com.intellij.ui.content.ContentFactory
 import org.inferna.icons.InfernaIcons
 import java.awt.BorderLayout
-import java.awt.Color
 import java.awt.Font
 import java.awt.GridLayout
 import javax.swing.BorderFactory
 import javax.swing.Icon
 import javax.swing.SwingConstants
+import javax.swing.Timer
 
 class InfernaDashboardToolWindowFactory : ToolWindowFactory, DumbAware {
+
+    companion object {
+        private val PANEL_BACKGROUND = JBColor(0xF5F0F0, 0x0A0405)
+        private val STATS_BACKGROUND = JBColor(0xEAE0E0, 0x140709)
+        private val STATS_BORDER = JBColor(0xD8C4C4, 0x2D0E12)
+        private val HEADER_FOREGROUND = JBColor(0xB8142E, 0xE6192E)
+        private val SUBSYSTEM_FOREGROUND = JBColor(0x961020, 0xB81424)
+        private val PROJECT_FOREGROUND = JBColor(0x221414, 0xE3D1D1)
+        private val SECONDARY_FOREGROUND = JBColor(0x6E5A5A, 0x7A6363)
+        private const val MEMORY_REFRESH_MS = 2000
+    }
 
     override val icon: Icon
         get() = InfernaIcons.Dashboard
@@ -30,32 +42,29 @@ class InfernaDashboardToolWindowFactory : ToolWindowFactory, DumbAware {
         toolWindow.setIcon(InfernaIcons.Dashboard)
 
         val panel = JBPanel<JBPanel<*>>(BorderLayout()).apply {
-            background = Color(0x0A, 0x04, 0x05)
+            background = PANEL_BACKGROUND
             border = BorderFactory.createEmptyBorder(16, 16, 16, 16)
         }
 
         val headerLabel = JBLabel("INFERNA BIOMETRICS", InfernaIcons.Dashboard, SwingConstants.CENTER).apply {
-            foreground = Color(0xE6, 0x19, 0x2E)
+            foreground = HEADER_FOREGROUND
             font = font.deriveFont(Font.BOLD, 14f)
             iconTextGap = 8
         }
 
-        val runtime = Runtime.getRuntime()
-        val totalMemoryMb = runtime.totalMemory() / (1024 * 1024)
-        val freeMemoryMb = runtime.freeMemory() / (1024 * 1024)
-        val usedMemoryMb = totalMemoryMb - freeMemoryMb
+        val memoryLabel = JBLabel(formatMemoryStats()).apply { foreground = SECONDARY_FOREGROUND }
 
         val statsPanel = JBPanel<JBPanel<*>>(GridLayout(4, 1, 8, 8)).apply {
-            background = Color(0x14, 0x07, 0x09)
+            background = STATS_BACKGROUND
             border = BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Color(0x2D, 0x0E, 0x12)),
+                BorderFactory.createLineBorder(STATS_BORDER),
                 BorderFactory.createEmptyBorder(10, 10, 10, 10)
             )
 
-            add(JBLabel("Project: ${project.name}").apply { foreground = Color(0xE3, 0xD1, 0xD1) })
-            add(JBLabel("Subsystem: Active").apply { foreground = Color(0xB8, 0x14, 0x24) })
-            add(JBLabel("JVM Memory: ${usedMemoryMb}MB / ${totalMemoryMb}MB").apply { foreground = Color(0x7A, 0x63, 0x63) })
-            add(JBLabel("Polyglot Engine: Java / Kotlin UAST").apply { foreground = Color(0x7A, 0x63, 0x63) })
+            add(JBLabel("Project: ${project.name}").apply { foreground = PROJECT_FOREGROUND })
+            add(JBLabel("Subsystem: Active").apply { foreground = SUBSYSTEM_FOREGROUND })
+            add(memoryLabel)
+            add(JBLabel("Polyglot Engine: Java / Kotlin UAST").apply { foreground = SECONDARY_FOREGROUND })
         }
 
         panel.add(headerLabel, BorderLayout.NORTH)
@@ -64,5 +73,17 @@ class InfernaDashboardToolWindowFactory : ToolWindowFactory, DumbAware {
         val contentFactory = ContentFactory.getInstance()
         val content = contentFactory.createContent(panel, "Overview", false)
         toolWindow.contentManager.addContent(content)
+
+        val memoryTimer = Timer(MEMORY_REFRESH_MS) { memoryLabel.text = formatMemoryStats() }
+        memoryTimer.start()
+        content.setDisposer { memoryTimer.stop() }
+    }
+
+    private fun formatMemoryStats(): String {
+        val runtime = Runtime.getRuntime()
+        val totalMemoryMb = runtime.totalMemory() / (1024 * 1024)
+        val freeMemoryMb = runtime.freeMemory() / (1024 * 1024)
+        val usedMemoryMb = totalMemoryMb - freeMemoryMb
+        return "JVM Memory: ${usedMemoryMb}MB / ${totalMemoryMb}MB"
     }
 }
