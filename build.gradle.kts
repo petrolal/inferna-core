@@ -11,6 +11,9 @@ repositories {
     mavenCentral()
     intellijPlatform {
         defaultRepositories()
+        // Required so the `instrumentCode` task can resolve the Java compiler
+        // used to instrument NotNull/Nullable annotations and form bindings.
+        intellijDependencies()
     }
 }
 
@@ -21,6 +24,8 @@ dependencies {
         bundledPlugin("org.jetbrains.kotlin")
         pluginVerifier()
         zipSigner()
+        // Provides the Java compiler dependency consumed by `instrumentCode`.
+        instrumentationTools()
     }
 
     testImplementation(kotlin("test"))
