@@ -3,7 +3,7 @@ package org.inferna.spring
 import com.intellij.codeInsight.daemon.RelatedItemLineMarkerInfo
 import com.intellij.codeInsight.daemon.RelatedItemLineMarkerProvider
 import com.intellij.codeInsight.navigation.NavigationGutterIconBuilder
-import com.intellij.icons.AllIcons
+import com.intellij.openapi.util.IconLoader
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiClassType
 import com.intellij.psi.PsiElement
@@ -50,7 +50,7 @@ class SpringBeanLineMarkerProvider : RelatedItemLineMarkerProvider() {
 
         if (candidates.isNotEmpty()) {
             val anchor = uField.sourcePsi?.firstChild ?: element
-            val lineMarker = NavigationGutterIconBuilder.create(AllIcons.Nodes.Services)
+            val lineMarker = NavigationGutterIconBuilder.create(IconLoader.getIcon("/icons/springBeanGutter.svg", javaClass))
                 .setTargets(candidates)
                 .setTooltipText("Inferna: Navigate to Spring Bean Declaration")
                 .createLineMarkerInfo(anchor)

@@ -30,7 +30,8 @@
         <!-- Right Docked Dashboard ToolWindow -->
         <toolWindow id="Inferna Dashboard"
                     anchor="right"
-                    factoryClass="org.inferna.dashboard.InfernaDashboardToolWindowFactory"/>
+                    factoryClass="org.inferna.dashboard.InfernaDashboardToolWindowFactory"
+                    icon="/icons/infernaDashboard.svg"/>
     </extensions>
 
     <extensions defaultExtensionNs="org.jetbrains.kotlin">

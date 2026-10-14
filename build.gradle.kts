@@ -108,8 +108,95 @@ tasks {
         }
     }
 
+    val prepareBranding = register("prepareBranding") {
+        val splash1x = file("src/main/resources/artwork/inferna_splash.png")
+        val splash2x = file("src/main/resources/artwork/inferna_splash@2x.png")
+        val splashJpeg = file("src/main/resources/artwork/inferna_ide_ce_splash_screen.jpeg")
+        val pluginIconSvg = file("src/main/resources/META-INF/pluginIcon.svg")
+        val dashboardSvg = file("src/main/resources/icons/infernaDashboard.svg")
+        val icon512 = file("src/main/resources/icons/inferna_icon_512x512.png")
+        val icon128 = file("src/main/resources/icons/inferna_icon_128x128.png")
+        val icon32 = file("src/main/resources/icons/inferna_icon_32x32.png")
+        val icon16 = file("src/main/resources/icons/inferna_icon_16x16.png")
+        val brandingJar = layout.buildDirectory.file("inferna-branding.jar")
+        inputs.files(splash1x, splash2x, splashJpeg, pluginIconSvg, dashboardSvg, icon512, icon128, icon32, icon16)
+        outputs.file(brandingJar)
+
+        doLast {
+            val jarFile = brandingJar.get().asFile
+            jarFile.parentFile.mkdirs()
+            ZipOutputStream(jarFile.outputStream()).use { zout ->
+                fun addEntry(name: String, bytes: ByteArray) {
+                    zout.putNextEntry(ZipEntry(name))
+                    zout.write(bytes)
+                    zout.closeEntry()
+                }
+
+                val b1x = splash1x.readBytes()
+                val b2x = splash2x.readBytes()
+                val bJpeg = splashJpeg.readBytes()
+                val bSvg = pluginIconSvg.readBytes()
+                val bDashSvg = dashboardSvg.readBytes()
+
+                addEntry("idea_community_logo.png", b1x)
+                addEntry("idea_community_logo@2x.png", b2x)
+                addEntry("idea_community_logo_java_30.png", b1x)
+                addEntry("idea_community_logo_java_30@2x.png", b2x)
+                addEntry("idea_community_logo_kotlin_15.png", b1x)
+                addEntry("idea_community_logo_kotlin_15@2x.png", b2x)
+                addEntry("inferna_splash.png", b1x)
+                addEntry("inferna_splash@2x.png", b2x)
+                addEntry("artwork/inferna_splash.png", b1x)
+                addEntry("artwork/inferna_splash@2x.png", b2x)
+                addEntry("artwork/inferna_ide_ce_splash_screen.jpeg", bJpeg)
+                addEntry("splash.png", b1x)
+
+                // Desktop OS panel, taskbar, dock, and window frame icons
+                addEntry("inferna.svg", bSvg)
+                addEntry("inferna_16.svg", bSvg)
+                addEntry("idea-ce.svg", bSvg)
+                addEntry("idea-ce_16.svg", bSvg)
+                addEntry("idea-ce_16@2x.svg", bSvg)
+                addEntry("idea-ce-eap.svg", bSvg)
+                addEntry("idea-ce-eap_16.svg", bSvg)
+                addEntry("idea-ce-eap_16@2x.svg", bSvg)
+                addEntry("icons/infernaDashboard.svg", bDashSvg)
+                addEntry("icon.png", icon512.readBytes())
+                addEntry("icon_512.png", icon512.readBytes())
+                addEntry("icon_128.png", icon128.readBytes())
+                addEntry("icon_32.png", icon32.readBytes())
+                addEntry("icon_16.png", icon16.readBytes())
+
+                val appInfoXml = """
+                    <component xmlns="http://jetbrains.org/intellij/schema/application-info">
+                      <version major="2025" minor="3.4"/>
+                      <company name="Inferna Project" url="https://github.com/inferna"/>
+                      <build number="IC-253.32098.37" date="202610140000" majorReleaseDate="20251208" /> 
+                      <logo url="/artwork/inferna_splash.png"/>
+                      <icon svg="/inferna.svg" svg-small="/inferna_16.svg"/>
+                      <icon-eap svg="/inferna.svg" svg-small="/inferna_16.svg"/>
+                      <names product="Inferna" fullname="Inferna IDE" script="inferna" motto="Biopunk Standalone JVM Environment"/>
+                      <essential-plugin>com.intellij.java</essential-plugin>
+                      <essential-plugin>com.intellij.java.ide</essential-plugin>
+                      <essential-plugin>com.intellij.modules.json</essential-plugin>
+                    </component>
+                """.trimIndent()
+
+                addEntry("idea/IdeaApplicationInfo.xml", appInfoXml.toByteArray(Charsets.UTF_8))
+                addEntry("idea/ApplicationInfo.xml", appInfoXml.toByteArray(Charsets.UTF_8))
+            }
+        }
+    }
+
     runIde {
+        dependsOn(prepareBranding)
+        val brandingJar = layout.buildDirectory.file("inferna-branding.jar").get().asFile
+        classpath = files(brandingJar, classpath)
         jvmArgs(
+            "-Xbootclasspath/a:${brandingJar.absolutePath}",
+            "-Dintellij.platform.load.app.info.from.resources=true",
+            "-Dsplash=true",
+            "-Didea.show.splash.longer=true",
             "-Xmx4g",
             "-XX:+UseG1GC",
             "-Dawt.useSystemAAFontSettings=on",
@@ -118,5 +205,12 @@ tasks {
             "-Didea.fatal.error.notification=disabled",
             "-Didea.is.internal=false"
         )
+        doFirst {
+            fileTree(layout.buildDirectory.dir("idea-sandbox")).matching {
+                include("**/system/splash/**")
+                include("**/system/icon-cache*")
+                include("**/system/.appinfo")
+            }.forEach { it.delete() }
+        }
     }
 }

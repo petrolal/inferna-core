@@ -1,29 +1,43 @@
 package org.inferna.dashboard
 
+import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPanel
 import com.intellij.ui.content.ContentFactory
+import org.inferna.icons.InfernaIcons
 import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Font
 import java.awt.GridLayout
 import javax.swing.BorderFactory
+import javax.swing.Icon
 import javax.swing.SwingConstants
 
-class InfernaDashboardToolWindowFactory : ToolWindowFactory {
+class InfernaDashboardToolWindowFactory : ToolWindowFactory, DumbAware {
+
+    override val icon: Icon
+        get() = InfernaIcons.Dashboard
+
+    override fun init(toolWindow: ToolWindow) {
+        toolWindow.setIcon(InfernaIcons.Dashboard)
+        toolWindow.stripeTitle = "Inferna Dashboard"
+    }
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
+        toolWindow.setIcon(InfernaIcons.Dashboard)
+
         val panel = JBPanel<JBPanel<*>>(BorderLayout()).apply {
             background = Color(0x0A, 0x04, 0x05)
             border = BorderFactory.createEmptyBorder(16, 16, 16, 16)
         }
 
-        val headerLabel = JBLabel("INFERNA BIOMETRICS", SwingConstants.CENTER).apply {
+        val headerLabel = JBLabel("INFERNA BIOMETRICS", InfernaIcons.Dashboard, SwingConstants.CENTER).apply {
             foreground = Color(0xE6, 0x19, 0x2E)
             font = font.deriveFont(Font.BOLD, 14f)
+            iconTextGap = 8
         }
 
         val runtime = Runtime.getRuntime()
