@@ -133,14 +133,19 @@ tasks {
         val splash2x = file("src/main/resources/artwork/inferna_splash@2x.png")
         val splashJpeg = file("src/main/resources/artwork/inferna_ide_ce_splash_screen.jpeg")
         val pluginIconSvg = file("src/main/resources/META-INF/pluginIcon.svg")
+        val pluginIcon16Svg = file("src/main/resources/icons/pluginIcon16.svg")
         val dashboardSvg = file("src/main/resources/icons/infernaDashboard.svg")
         val icon512 = file("src/main/resources/icons/inferna_icon_512x512.png")
         val icon128 = file("src/main/resources/icons/inferna_icon_128x128.png")
         val icon32 = file("src/main/resources/icons/inferna_icon_32x32.png")
         val icon16 = file("src/main/resources/icons/inferna_icon_16x16.png")
         val brandingJar = layout.buildDirectory.file("inferna-branding.jar")
-        inputs.files(splash1x, splash2x, splashJpeg, pluginIconSvg, dashboardSvg, icon512, icon128, icon32, icon16)
+        inputs.files(splash1x, splash2x, splashJpeg, pluginIconSvg, pluginIcon16Svg, dashboardSvg, icon512, icon128, icon32, icon16)
         outputs.file(brandingJar)
+        // The generated ApplicationInfo.xml embeds gradle.properties values and the current
+        // timestamp, neither of which are tracked by the file inputs above; without this the task
+        // goes UP-TO-DATE and keeps serving a stale branding jar whenever only those change.
+        outputs.upToDateWhen { false }
 
         doLast {
             val jarFile = brandingJar.get().asFile
@@ -156,6 +161,7 @@ tasks {
                 val b2x = splash2x.readBytes()
                 val bJpeg = splashJpeg.readBytes()
                 val bSvg = pluginIconSvg.readBytes()
+                val bSvg16 = pluginIcon16Svg.readBytes()
                 val bDashSvg = dashboardSvg.readBytes()
 
                 addEntry("idea_community_logo.png", b1x)
@@ -171,15 +177,20 @@ tasks {
                 addEntry("artwork/inferna_ide_ce_splash_screen.jpeg", bJpeg)
                 addEntry("splash.png", b1x)
 
-                // Desktop OS panel, taskbar, dock, and window frame icons
+                // Desktop OS panel, taskbar, dock, and window frame icons.
+                // The "_16" / "_16@2x" entries are rendered at a fixed 16x16 px slot by the
+                // platform (e.g. the project row icon in the Open Project / Welcome Screen
+                // FileChooser tree), so they must use the dedicated 16x16 glyph, not the full
+                // 80x80 pluginIcon.svg: reusing the big SVG there made the tree row stretch to
+                // fit its reported intrinsic size instead of rendering within 16x16.
                 addEntry("inferna.svg", bSvg)
-                addEntry("inferna_16.svg", bSvg)
+                addEntry("inferna_16.svg", bSvg16)
                 addEntry("idea-ce.svg", bSvg)
-                addEntry("idea-ce_16.svg", bSvg)
-                addEntry("idea-ce_16@2x.svg", bSvg)
+                addEntry("idea-ce_16.svg", bSvg16)
+                addEntry("idea-ce_16@2x.svg", bSvg16)
                 addEntry("idea-ce-eap.svg", bSvg)
-                addEntry("idea-ce-eap_16.svg", bSvg)
-                addEntry("idea-ce-eap_16@2x.svg", bSvg)
+                addEntry("idea-ce-eap_16.svg", bSvg16)
+                addEntry("idea-ce-eap_16@2x.svg", bSvg16)
                 addEntry("icons/infernaDashboard.svg", bDashSvg)
                 addEntry("icon.png", icon512.readBytes())
                 addEntry("icon_512.png", icon512.readBytes())
