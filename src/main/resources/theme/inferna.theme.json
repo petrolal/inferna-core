@@ -125,6 +125,18 @@
       }
     },
 
+    "Terminal": {
+      "background": "#0a0405",
+      "foreground": "#e6d5d5",
+      "borderColor": "#1c0a0e",
+      "headerBackground": "#100507",
+      "tab": {
+        "selectedBackground": "#1c0d10",
+        "selectedForeground": "#e6d5d5",
+        "hoverBackground": "#170a0d"
+      }
+    },
+
     "StripeToolbar.Button": {
       "size": "37,40",
       "leftStripeIcon.padding": "5,5,5,2",

@@ -25,7 +25,8 @@ inferna-ide/
             ├── META-INF/
             │   └── plugin.xml
             └── theme/
-                └── inferna.theme.json
+                ├── inferna.theme.json
+                └── inferna.xml
 ```
 
 ---
@@ -322,7 +323,7 @@ import com.intellij.openapi.editor.colors.EditorColorsManager
 
 private const val INFERNA_THEME_NAME = "Inferna Visceral Dark"
 private const val DEFAULT_THEME_APPLIED_KEY = "org.inferna.theme.defaultApplied"
-private const val DEFAULT_SCHEME_APPLIED_KEY = "org.inferna.theme.editorSchemeApplied"
+private const val DEFAULT_SCHEME_APPLIED_KEY = "org.inferna.theme.editorSchemeApplied.v2"
 
 class InfernaLifecycleListener : AppLifecycleListener {
     private val logger = Logger.getInstance(InfernaLifecycleListener::class.java)
@@ -392,17 +393,19 @@ class InfernaLifecycleListener : AppLifecycleListener {
             }
         }
 
-        if (!properties.getBoolean(DEFAULT_SCHEME_APPLIED_KEY, false)) {
-            val editorColorsManager = EditorColorsManager.getInstance()
-            val infernaScheme = editorColorsManager.getScheme(INFERNA_THEME_NAME)
-                ?: editorColorsManager.allSchemes.firstOrNull { it.name == INFERNA_THEME_NAME }
-            if (infernaScheme != null) {
-                editorColorsManager.globalScheme = infernaScheme
+        val editorColorsManager = EditorColorsManager.getInstance()
+        val infernaScheme = editorColorsManager.getScheme(INFERNA_THEME_NAME)
+            ?: editorColorsManager.allSchemes.firstOrNull { it.name == INFERNA_THEME_NAME }
+        if (infernaScheme != null) {
+            val schemeNeedsApply = !properties.getBoolean(DEFAULT_SCHEME_APPLIED_KEY, false) ||
+                editorColorsManager.globalScheme.name == INFERNA_THEME_NAME
+            if (schemeNeedsApply) {
+                editorColorsManager.setGlobalScheme(infernaScheme)
                 properties.setValue(DEFAULT_SCHEME_APPLIED_KEY, true)
                 logger.info("Inferna Visceral Dark applied as the default editor color scheme.")
-            } else {
-                logger.warn("Inferna Visceral Dark editor color scheme not found among installed schemes.")
             }
+        } else {
+            logger.warn("Inferna Visceral Dark editor color scheme not found among installed schemes.")
         }
     }
 }

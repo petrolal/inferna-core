@@ -31,6 +31,46 @@
     <option name="ERROR_STRIPE_COLOR" value="ff334b" />
     <option name="WARNING_STRIPE_COLOR" value="d97706" />
     <option name="INFO_STRIPE_COLOR" value="8f6f73" />
+
+    <!-- Terminal & Console Canvas -->
+    <option name="CONSOLE_BACKGROUND_KEY" value="0a0405" />
+    <option name="TERMINAL_BACKGROUND" value="0a0405" />
+    <option name="TERMINAL_FOREGROUND" value="e6d5d5" />
+    <option name="TERMINAL_CURSOR_COLOR" value="ff1e38" />
+
+    <!-- Block Terminal (New UI) Colors -->
+    <option name="BLOCK_TERMINAL_DEFAULT_BACKGROUND" value="0a0405" />
+    <option name="BLOCK_TERMINAL_DEFAULT_FOREGROUND" value="e6d5d5" />
+    <option name="BLOCK_TERMINAL_BLOCK_BACKGROUND_START" value="120709" />
+    <option name="BLOCK_TERMINAL_BLOCK_BACKGROUND_END" value="0a0405" />
+    <option name="BLOCK_TERMINAL_HOVERED_BLOCK_BACKGROUND_START" value="1c0d10" />
+    <option name="BLOCK_TERMINAL_HOVERED_BLOCK_BACKGROUND_END" value="14070a" />
+    <option name="BLOCK_TERMINAL_SELECTED_BLOCK_BACKGROUND" value="2b0f15" />
+    <option name="BLOCK_TERMINAL_SELECTED_BLOCK_STROKE_COLOR" value="b81424" />
+    <option name="BLOCK_TERMINAL_INACTIVE_SELECTED_BLOCK_BACKGROUND" value="1c0d10" />
+    <option name="BLOCK_TERMINAL_INACTIVE_SELECTED_BLOCK_STROKE_COLOR" value="422127" />
+    <option name="BLOCK_TERMINAL_ERROR_BLOCK_STROKE_COLOR" value="ff334b" />
+    <option name="BLOCK_TERMINAL_PROMPT_SEPARATOR_COLOR" value="240d12" />
+    <option name="BLOCK_TERMINAL_GENERATE_COMMAND_PLACEHOLDER_FOREGROUND" value="8f6f73" />
+    <option name="BLOCK_TERMINAL_GENERATE_COMMAND_CARET_COLOR" value="ff1e38" />
+
+    <!-- Classic JediTerm ANSI Colors in <colors> -->
+    <option name="TERMINAL_ANSI_BLACK" value="1a0a0d" />
+    <option name="TERMINAL_ANSI_RED" value="e6192e" />
+    <option name="TERMINAL_ANSI_GREEN" value="22c55e" />
+    <option name="TERMINAL_ANSI_YELLOW" value="eab308" />
+    <option name="TERMINAL_ANSI_BLUE" value="3b82f6" />
+    <option name="TERMINAL_ANSI_MAGENTA" value="d946ef" />
+    <option name="TERMINAL_ANSI_CYAN" value="06b6d4" />
+    <option name="TERMINAL_ANSI_WHITE" value="e6d5d5" />
+    <option name="TERMINAL_ANSI_BRIGHT_BLACK" value="624046" />
+    <option name="TERMINAL_ANSI_BRIGHT_RED" value="ff334b" />
+    <option name="TERMINAL_ANSI_BRIGHT_GREEN" value="4ade80" />
+    <option name="TERMINAL_ANSI_BRIGHT_YELLOW" value="fde047" />
+    <option name="TERMINAL_ANSI_BRIGHT_BLUE" value="60a5fa" />
+    <option name="TERMINAL_ANSI_BRIGHT_MAGENTA" value="f472b6" />
+    <option name="TERMINAL_ANSI_BRIGHT_CYAN" value="22d3ee" />
+    <option name="TERMINAL_ANSI_BRIGHT_WHITE" value="ffffff" />
   </colors>
   <attributes>
     <!-- Core Language Elements -->
@@ -234,6 +274,199 @@
       <value>
         <option name="EFFECT_COLOR" value="8f6f73" />
         <option name="EFFECT_TYPE" value="3" />
+      </value>
+    </option>
+
+    <!-- Console & Terminal Standard Streams -->
+    <option name="CONSOLE_NORMAL_OUTPUT">
+      <value>
+        <option name="FOREGROUND" value="e6d5d5" />
+      </value>
+    </option>
+    <option name="CONSOLE_ERROR_OUTPUT">
+      <value>
+        <option name="FOREGROUND" value="ff334b" />
+      </value>
+    </option>
+    <option name="CONSOLE_USER_INPUT">
+      <value>
+        <option name="FOREGROUND" value="ff1e38" />
+        <option name="FONT_TYPE" value="2" />
+      </value>
+    </option>
+    <option name="CONSOLE_SYSTEM_OUTPUT">
+      <value>
+        <option name="FOREGROUND" value="8f6f73" />
+      </value>
+    </option>
+
+    <!-- Standard Console ANSI Output Attributes -->
+    <option name="CONSOLE_BLACK_OUTPUT">
+      <value>
+        <option name="FOREGROUND" value="1a0a0d" />
+      </value>
+    </option>
+    <option name="CONSOLE_RED_OUTPUT">
+      <value>
+        <option name="FOREGROUND" value="e6192e" />
+      </value>
+    </option>
+    <option name="CONSOLE_GREEN_OUTPUT">
+      <value>
+        <option name="FOREGROUND" value="22c55e" />
+      </value>
+    </option>
+    <option name="CONSOLE_YELLOW_OUTPUT">
+      <value>
+        <option name="FOREGROUND" value="eab308" />
+      </value>
+    </option>
+    <option name="CONSOLE_BLUE_OUTPUT">
+      <value>
+        <option name="FOREGROUND" value="3b82f6" />
+      </value>
+    </option>
+    <option name="CONSOLE_MAGENTA_OUTPUT">
+      <value>
+        <option name="FOREGROUND" value="d946ef" />
+      </value>
+    </option>
+    <option name="CONSOLE_CYAN_OUTPUT">
+      <value>
+        <option name="FOREGROUND" value="06b6d4" />
+      </value>
+    </option>
+    <option name="CONSOLE_GRAY_OUTPUT">
+      <value>
+        <option name="FOREGROUND" value="8f6f73" />
+      </value>
+    </option>
+    <option name="CONSOLE_DARKGRAY_OUTPUT">
+      <value>
+        <option name="FOREGROUND" value="624046" />
+      </value>
+    </option>
+    <option name="CONSOLE_RED_BRIGHT_OUTPUT">
+      <value>
+        <option name="FOREGROUND" value="ff334b" />
+      </value>
+    </option>
+    <option name="CONSOLE_GREEN_BRIGHT_OUTPUT">
+      <value>
+        <option name="FOREGROUND" value="4ade80" />
+      </value>
+    </option>
+    <option name="CONSOLE_YELLOW_BRIGHT_OUTPUT">
+      <value>
+        <option name="FOREGROUND" value="fde047" />
+      </value>
+    </option>
+    <option name="CONSOLE_BLUE_BRIGHT_OUTPUT">
+      <value>
+        <option name="FOREGROUND" value="60a5fa" />
+      </value>
+    </option>
+    <option name="CONSOLE_MAGENTA_BRIGHT_OUTPUT">
+      <value>
+        <option name="FOREGROUND" value="f472b6" />
+      </value>
+    </option>
+    <option name="CONSOLE_CYAN_BRIGHT_OUTPUT">
+      <value>
+        <option name="FOREGROUND" value="22d3ee" />
+      </value>
+    </option>
+    <option name="CONSOLE_WHITE_OUTPUT">
+      <value>
+        <option name="FOREGROUND" value="ffffff" />
+      </value>
+    </option>
+
+    <!-- Block Terminal ANSI & Command Attributes -->
+    <option name="BLOCK_TERMINAL_COMMAND">
+      <value>
+        <option name="FOREGROUND" value="ffffff" />
+        <option name="FONT_TYPE" value="1" />
+      </value>
+    </option>
+    <option name="BLOCK_TERMINAL_BLACK">
+      <value>
+        <option name="FOREGROUND" value="1a0a0d" />
+      </value>
+    </option>
+    <option name="BLOCK_TERMINAL_RED">
+      <value>
+        <option name="FOREGROUND" value="e6192e" />
+      </value>
+    </option>
+    <option name="BLOCK_TERMINAL_GREEN">
+      <value>
+        <option name="FOREGROUND" value="22c55e" />
+      </value>
+    </option>
+    <option name="BLOCK_TERMINAL_YELLOW">
+      <value>
+        <option name="FOREGROUND" value="eab308" />
+      </value>
+    </option>
+    <option name="BLOCK_TERMINAL_BLUE">
+      <value>
+        <option name="FOREGROUND" value="3b82f6" />
+      </value>
+    </option>
+    <option name="BLOCK_TERMINAL_MAGENTA">
+      <value>
+        <option name="FOREGROUND" value="d946ef" />
+      </value>
+    </option>
+    <option name="BLOCK_TERMINAL_CYAN">
+      <value>
+        <option name="FOREGROUND" value="06b6d4" />
+      </value>
+    </option>
+    <option name="BLOCK_TERMINAL_WHITE">
+      <value>
+        <option name="FOREGROUND" value="e6d5d5" />
+      </value>
+    </option>
+    <option name="BLOCK_TERMINAL_BLACK_BRIGHT">
+      <value>
+        <option name="FOREGROUND" value="624046" />
+      </value>
+    </option>
+    <option name="BLOCK_TERMINAL_RED_BRIGHT">
+      <value>
+        <option name="FOREGROUND" value="ff334b" />
+      </value>
+    </option>
+    <option name="BLOCK_TERMINAL_GREEN_BRIGHT">
+      <value>
+        <option name="FOREGROUND" value="4ade80" />
+      </value>
+    </option>
+    <option name="BLOCK_TERMINAL_YELLOW_BRIGHT">
+      <value>
+        <option name="FOREGROUND" value="fde047" />
+      </value>
+    </option>
+    <option name="BLOCK_TERMINAL_BLUE_BRIGHT">
+      <value>
+        <option name="FOREGROUND" value="60a5fa" />
+      </value>
+    </option>
+    <option name="BLOCK_TERMINAL_MAGENTA_BRIGHT">
+      <value>
+        <option name="FOREGROUND" value="f472b6" />
+      </value>
+    </option>
+    <option name="BLOCK_TERMINAL_CYAN_BRIGHT">
+      <value>
+        <option name="FOREGROUND" value="22d3ee" />
+      </value>
+    </option>
+    <option name="BLOCK_TERMINAL_WHITE_BRIGHT">
+      <value>
+        <option name="FOREGROUND" value="ffffff" />
       </value>
     </option>
   </attributes>
