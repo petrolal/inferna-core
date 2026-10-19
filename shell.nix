@@ -1,3 +1,7 @@
+# Inferna Visceral — Biopunk Theme, Splash Branding & Biometrics for IntelliJ IDEA
+# Copyright (C) 2026 Lucas Petrola <petrolalucas@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
 # Optional, NixOS-only development shell.
 #
 # This project's build (build.gradle.kts, settings.gradle.kts) is fully

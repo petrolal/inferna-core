@@ -1,3 +1,8 @@
+<!--
+  ~ Inferna Visceral — Biopunk Theme, Splash Branding & Biometrics for IntelliJ IDEA
+  ~ Copyright (C) 2026 Lucas Petrola <petrolalucas@gmail.com>
+  ~ SPDX-License-Identifier: GPL-3.0-or-later
+  -->
 # Inferna IDE - Project Scaffolding Guide
 
 This document contains the complete file tree and code for the **Inferna IDE** project, built atop the open-source **IntelliJ Platform SDK (Community Edition)** with Gradle Kotlin DSL, Java 21, and Kotlin 2.0.

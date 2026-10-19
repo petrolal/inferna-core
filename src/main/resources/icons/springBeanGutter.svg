@@ -1,3 +1,8 @@
+<!--
+  ~ Inferna Visceral — Biopunk Theme, Splash Branding & Biometrics for IntelliJ IDEA
+  ~ Copyright (C) 2026 Lucas Petrola <petrolalucas@gmail.com>
+  ~ SPDX-License-Identifier: GPL-3.0-or-later
+  -->
 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12">
   <path d="M6 1 C8 2, 11 5, 10 9 C9 11, 7 11, 6 11 C5 11, 3 11, 2 9 C1 5, 4 2, 6 1 Z" fill="#b81424" stroke="#e6192e" stroke-width="0.8"/>
   <path d="M6 2 L6 10" stroke="#0a0405" stroke-width="0.8" stroke-linecap="round"/>

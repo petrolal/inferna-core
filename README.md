@@ -1,3 +1,8 @@
+<!--
+  ~ Inferna Visceral — Biopunk Theme, Splash Branding & Biometrics for IntelliJ IDEA
+  ~ Copyright (C) 2026 Lucas Petrola <petrolalucas@gmail.com>
+  ~ SPDX-License-Identifier: GPL-3.0-or-later
+  -->
 # Inferna Visceral — Theme, Splash Branding & Biometrics for IntelliJ IDEA
 
 <p align="center">
@@ -89,8 +94,11 @@ INTELLIJ_PUBLISH_TOKEN="<your-marketplace-token>" ./gradlew publishPlugin
 
 ---
 
-## 📄 License
+## 📄 License & Copyright
 
-This project is licensed under the **GNU General Public License v3.0** (GPL-3.0).  
+Copyright (C) 2026 **Lucas Petrola** `<petrolalucas@gmail.com>`
+
+This project is licensed under the **GNU General Public License v3.0 or later** (`GPL-3.0-or-later`).  
 See the [`LICENSE`](LICENSE) file for the full license text.
+
 
