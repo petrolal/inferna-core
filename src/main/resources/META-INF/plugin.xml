@@ -1,20 +1,41 @@
 <idea-plugin>
     <id>org.inferna.ide</id>
-    <name>Inferna IDE</name>
-    <vendor>Inferna Project</vendor>
+    <name>Inferna Visceral Theme &amp; Biometrics</name>
+    <vendor url="https://github.com/inferna">Inferna Project</vendor>
 
     <description><![CDATA[
-      Custom biopunk developer platform and JVM tooling with native Kotlin and Spring support.
+      <p><strong>Inferna Visceral</strong> brings a focused, industrial biopunk aesthetic, splash branding, and real-time JVM &amp; Spring telemetry to <strong>IntelliJ IDEA Ultimate</strong> and Community Edition.</p>
+      <h3>Features</h3>
+      <ul>
+        <li><strong>Inferna Visceral Dark UI Theme &amp; Editor Color Scheme:</strong> Deep obsidian surfaces (<code>#070203</code> / <code>#0a0405</code>) paired with high-contrast arterial crimson accents (<code>#b81424</code> / <code>#ff1e38</code>) tailored for IntelliJ's modern Islands UI, editor tabs, popups, and Block Terminal.</li>
+        <li><strong>Automatic Splash Screen &amp; Icon Branding:</strong> Automatically synchronizes the Inferna Visceral splash screen and window icons while the Inferna theme is active, and cleanly restores the default IDE splash screen if you switch to another theme.</li>
+        <li><strong>Inferna Biometrics Dashboard:</strong> Right-docked telemetry tool window tracking live JVM heap utilization, compilation status, and project-wide Spring bean counts (<code>@Component</code>, <code>@Service</code>, <code>@Repository</code>, <code>@Controller</code>, <code>@Configuration</code>, and <code>@Bean</code> declarations).</li>
+        <li><strong>Smart Spring Tooling Integration:</strong> Seamlessly defers to IntelliJ IDEA Ultimate's native Spring engine when active (preventing duplicate gutter icons or conflicting inspections), while providing polyglot UAST Spring gutter navigation, <code>@Value</code> property resolution, and bean ambiguity quick-fixes when running without Ultimate's Spring plugin.</li>
+      </ul>
     ]]></description>
+
+    <change-notes><![CDATA[
+      <h3>1.0.0</h3>
+      <ul>
+        <li>Full compatibility with IntelliJ IDEA Ultimate (2025.1 – 2026.x+) and JetBrains Marketplace.</li>
+        <li>Added automatic, reversible splash screen cache synchronization and window icon branding when the Inferna Visceral Dark theme is active.</li>
+        <li>Preserved all built-in IDE themes and color schemes in Settings &rarr; Appearance.</li>
+        <li>Automatic detection of IntelliJ IDEA Ultimate's native Spring plugin to prevent duplicate gutter markers and false-positive inspections.</li>
+        <li>Non-blocking background Spring bean indexing (including <code>@Configuration</code> and <code>@Bean</code> methods) in the Inferna Biometrics Dashboard.</li>
+      </ul>
+    ]]></change-notes>
 
     <!-- Essential platform dependencies -->
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.java</depends>
     <depends>org.jetbrains.kotlin</depends>
+    <depends>com.intellij.properties</depends>
 
     <applicationListeners>
         <listener class="org.inferna.core.InfernaLifecycleListener"
                   topic="com.intellij.ide.AppLifecycleListener"/>
+        <listener class="org.inferna.core.InfernaLifecycleListener"
+                  topic="com.intellij.ide.ui.LafManagerListener"/>
     </applicationListeners>
 
     <extensions defaultExtensionNs="com.intellij">
@@ -22,7 +43,7 @@
         <themeProvider id="org.inferna.theme.visceral" path="/theme/inferna.theme.json" targetUi="islands"/>
         <bundledColorScheme id="Inferna Visceral Dark" path="/theme/inferna.xml"/>
 
-        <!-- Universal Spring Bean LineMarker (Polyglot: Java & Kotlin via UAST) -->
+        <!-- Universal Spring Bean LineMarker (Polyglot: Java & Kotlin via UAST; defers to Ultimate native Spring when active) -->
         <codeInsight.lineMarkerProvider
             language="UAST"
             implementationClass="org.inferna.spring.SpringBeanLineMarkerProvider"/>
@@ -32,9 +53,22 @@
                     anchor="right"
                     factoryClass="org.inferna.dashboard.InfernaDashboardToolWindowFactory"
                     icon="/icons/infernaDashboard.svg"/>
+
+        <!-- @Value("${property}") navigation to its .properties declaration (defers to Ultimate native Spring when active) -->
+        <psi.referenceContributor implementation="org.inferna.spring.SpringValueReferenceContributor"/>
+
+        <!-- Unresolved / ambiguous Spring bean injection point (defers to Ultimate native Spring when active) -->
+        <localInspection language="UAST"
+                         groupName="Spring"
+                         shortName="InfernaUnresolvedSpringBean"
+                         displayName="Unresolved or ambiguous Spring bean injection"
+                         enabledByDefault="true"
+                         level="WARNING"
+                         implementationClass="org.inferna.spring.UnresolvedSpringBeanInspection"/>
     </extensions>
 
     <extensions defaultExtensionNs="org.jetbrains.kotlin">
         <supportsKotlinPluginMode supportsK1="true" supportsK2="true"/>
     </extensions>
 </idea-plugin>
+

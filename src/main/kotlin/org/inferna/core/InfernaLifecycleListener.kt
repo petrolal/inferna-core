@@ -1,100 +1,223 @@
 package org.inferna.core
 
-import com.intellij.configurationStore.BundledSchemeEP
 import com.intellij.ide.AppLifecycleListener
 import com.intellij.ide.ui.LafManager
-import com.intellij.ide.ui.UIThemeProvider
+import com.intellij.ide.ui.LafManagerListener
+import com.intellij.ide.util.PropertiesComponent
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
+import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.editor.colors.EditorColorsManager
-import com.intellij.openapi.editor.colors.impl.EditorColorsManagerImpl
-import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.options.advanced.AdvancedSettings
+import com.intellij.util.concurrency.AppExecutorUtil
+import java.awt.Frame
+import java.awt.Image
+import java.awt.RenderingHints
+import java.awt.image.BufferedImage
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardCopyOption
+import javax.imageio.ImageIO
+import kotlin.io.path.exists
+import kotlin.io.path.extension
+import kotlin.io.path.name
 
 private const val INFERNA_THEME_NAME = "Inferna Visceral Dark"
 private const val INFERNA_THEME_PROVIDER_ID = "org.inferna.theme.visceral"
-// The platform resolves a required default LAF per active UI mode (LafManagerImplKt.getDefaultLaf)
-// and throws IllegalStateException if that anchor isn't registered. Since we run in "islands" mode
-// (ide.ui.theme.custom.islands=true), "Islands Dark"/"Islands Light" are that mode's anchors and
-// must stay registered even though we never want them selectable; only the classic/new-UI theme
-// providers (for modes we don't use) are safe to remove outright.
-private val THEME_PROVIDER_IDS_TO_KEEP = setOf(INFERNA_THEME_PROVIDER_ID, "Islands Dark", "Islands Light")
-// Inferna's editor scheme declares parent_scheme="Darcula" and inherits any attribute it doesn't
-// override from it, so Darcula must stay registered - removing it would break those inherited
-// colors. "Islands Dark" is the color scheme paired with the kept "Islands Dark" theme provider
-// (same default-LAF-anchor risk), so it stays too. Every other bundled scheme is safe to drop.
-private val COLOR_SCHEME_NAMES_TO_KEEP = setOf(INFERNA_THEME_NAME, "Darcula", "Islands Dark")
-private val BUNDLED_COLOR_SCHEME_EP = ExtensionPointName.create<BundledSchemeEP>("com.intellij.bundledColorScheme")
+private const val FIRST_RUN_KEY = "org.inferna.ide.theme.initialized"
+private const val SPLASH_1X_RESOURCE = "/artwork/inferna_splash.png"
+private const val SPLASH_2X_RESOURCE = "/artwork/inferna_splash@2x.png"
 
-class InfernaLifecycleListener : AppLifecycleListener {
+private val FRAME_ICON_RESOURCES = listOf(
+    "/icons/inferna_icon_16x16.png",
+    "/icons/inferna_icon_24x24.png",
+    "/icons/inferna_icon_32x32.png",
+    "/icons/inferna_icon_48x48.png",
+    "/icons/inferna_icon_64x64.png",
+    "/icons/inferna_icon_128x128.png",
+    "/icons/inferna_icon_256x256.png",
+    "/icons/inferna_icon_512x512.png"
+)
+
+class InfernaLifecycleListener : AppLifecycleListener, LafManagerListener {
     private val logger = Logger.getInstance(InfernaLifecycleListener::class.java)
 
-    init {
-        // Suppress remote Gradle JVM compatibility updates to prevent JavaVersion.parse crashes
-        // caused by newer Java versions (e.g. Java 25+) listed in JetBrains' online compatibility matrix.
-        System.setProperty("gradle.compatibility.update.interval", "0")
-        System.setProperty("gradle.compatibility.config.url", "")
-    }
-
     override fun appFrameCreated(commandLineArgs: MutableList<String>) {
-        logger.info("=========================================")
-        logger.info(" Inferna IDE Engine Initializing...     ")
-        logger.info(" Runtime: JVM 21 | Target: Biopunk OS   ")
-        logger.info("=========================================")
-
-        // appFrameCreated runs off the EDT in this platform build; AdvancedSettings.setBoolean can
-        // synchronously fire a listener (IslandsUICustomization) that opens a "restart?" dialog,
-        // which requires the EDT and crashes otherwise.
+        logger.info("Inferna Visceral platform plugin initializing...")
         runOnEdt {
             try {
                 AdvancedSettings.setBoolean("ide.ui.theme.custom.islands", true)
             } catch (e: Exception) {
                 logger.debug("AdvancedSettings ide.ui.theme.custom.islands not available: ${e.message}")
             }
-
-            restrictToInfernaOnly()
         }
     }
 
     override fun appStarted() {
-        logger.info("Inferna Platform active. All subsystems dispatched.")
         runOnEdt {
-            enforceInfernaTheme()
+            initializeThemeIfNeeded()
+            syncBrandingForCurrentTheme()
         }
     }
 
-    // Unregisters every other bundled UI theme and editor color scheme so Settings > Appearance
-    // never offers them: both themeProvider and bundledColorScheme are declared dynamic="true" by
-    // the platform itself (meant to support runtime add/remove), so this is a supported mutation,
-    // not a hack - unlike patching the IDE's own files. Must run before any theme is re-applied so
-    // nothing still references the providers we're about to remove.
-    // unregisterExtension(T) is deprecated in favor of a predicate-based bulk API that needs the
-    // raw ExtensionComponentAdapter, not the resolved bean; removing a short, fixed list of known
-    // instances by identity at startup is exactly what it was built for, so we keep using it.
-    @Suppress("DEPRECATION")
-    private fun restrictToInfernaOnly() {
-        val themePoint = UIThemeProvider.EP_NAME.point
-        UIThemeProvider.EP_NAME.extensionList
-            .filter { it.id !in THEME_PROVIDER_IDS_TO_KEEP }
-            .forEach { themePoint.unregisterExtension(it) }
+    override fun lookAndFeelChanged(source: LafManager) {
+        if (isInfernaActive(source)) {
+            syncEditorColorScheme()
+        }
+        syncBrandingForCurrentTheme()
+    }
 
-        val schemePoint = BUNDLED_COLOR_SCHEME_EP.point
-        BUNDLED_COLOR_SCHEME_EP.extensionList
-            .filter { it.path?.endsWith("inferna.xml", ignoreCase = true) != true }
-            .forEach { schemePoint.unregisterExtension(it) }
+    private fun initializeThemeIfNeeded() {
+        val props = PropertiesComponent.getInstance()
+        val lafManager = LafManager.getInstance()
+        if (!props.getBoolean(FIRST_RUN_KEY, false)) {
+            props.setValue(FIRST_RUN_KEY, true)
+            val infernaLaf = lafManager.findLaf(INFERNA_THEME_PROVIDER_ID)
+            if (infernaLaf != null && lafManager.currentUIThemeLookAndFeel?.id != INFERNA_THEME_PROVIDER_ID) {
+                lafManager.setCurrentLookAndFeel(infernaLaf, true)
+                lafManager.updateUI()
+                logger.info("Activated Inferna Visceral Dark theme on initial plugin setup.")
+            }
+            syncEditorColorScheme()
+        } else if (isInfernaActive(lafManager)) {
+            syncEditorColorScheme()
+        }
+    }
 
-        // The EP unregistration above only stops future (re)loading; by appFrameCreated every
-        // bundled scheme is already loaded into EditorColorsManagerImpl's own registry, so it must
-        // be evicted there too for the Color Scheme picker to stop listing it.
+    private fun syncEditorColorScheme() {
         val editorColorsManager = EditorColorsManager.getInstance()
-        if (editorColorsManager is EditorColorsManagerImpl) {
-            editorColorsManager.allSchemes
-                .filter { it.name !in COLOR_SCHEME_NAMES_TO_KEEP }
-                .forEach { editorColorsManager.removeScheme(it) }
+        val infernaScheme = editorColorsManager.getScheme(INFERNA_THEME_NAME)
+            ?: editorColorsManager.allSchemes.firstOrNull { it.name == INFERNA_THEME_NAME }
+        if (infernaScheme != null && editorColorsManager.globalScheme.name != INFERNA_THEME_NAME) {
+            editorColorsManager.setGlobalScheme(infernaScheme)
+            logger.info("Synchronized Inferna Visceral Dark editor color scheme.")
+        }
+    }
+
+    private fun isInfernaActive(lafManager: LafManager = LafManager.getInstance()): Boolean {
+        val current = lafManager.currentUIThemeLookAndFeel ?: return false
+        return current.id == INFERNA_THEME_PROVIDER_ID || current.name == INFERNA_THEME_NAME
+    }
+
+    private fun syncBrandingForCurrentTheme() {
+        val active = isInfernaActive()
+        if (active) {
+            applyFrameIcons()
+        }
+        AppExecutorUtil.getAppExecutorService().execute {
+            try {
+                syncSplashCache(active)
+            } catch (e: Exception) {
+                logger.debug("Could not synchronize Inferna splash screen cache: ${e.message}")
+            }
+        }
+    }
+
+    private fun applyFrameIcons() {
+        val icons: List<Image> = FRAME_ICON_RESOURCES.mapNotNull { path ->
+            InfernaLifecycleListener::class.java.getResourceAsStream(path)?.use { stream ->
+                runCatching { ImageIO.read(stream) }.getOrNull()
+            }
+        }
+        if (icons.isEmpty()) return
+        for (frame in Frame.getFrames()) {
+            if (frame.isDisplayable) {
+                frame.iconImages = icons
+            }
+        }
+    }
+
+    /**
+     * Synchronizes IntelliJ Platform's binary `.ij` splash cache in `<systemPath>/splash/`
+     * with the Inferna artwork when the Inferna theme is active, and restores the original
+     * IDE splash cache from backup if the user switches to a different theme.
+     */
+    private fun syncSplashCache(infernaActive: Boolean) {
+        val splashDir = Path.of(PathManager.getSystemPath(), "splash")
+        if (!splashDir.exists() || !Files.isDirectory(splashDir)) return
+
+        val ijFiles = Files.list(splashDir).use { stream ->
+            stream.filter { Files.isRegularFile(it) && it.extension == "ij" }.toList()
         }
 
-        logger.info("Restricted installed themes and color schemes to Inferna Visceral (+ required platform defaults: Islands Dark/Light, Darcula).")
+        for (ijFile in ijFiles) {
+            val backupFile = splashDir.resolve("${ijFile.name}.inferna-backup")
+            val stampFile = splashDir.resolve("${ijFile.name}.inferna-stamp")
+
+            if (!infernaActive) {
+                if (backupFile.exists()) {
+                    Files.copy(backupFile, ijFile, StandardCopyOption.REPLACE_EXISTING)
+                    Files.deleteIfExists(stampFile)
+                    logger.info("Restored default IDE splash cache for ${ijFile.name}.")
+                }
+                continue
+            }
+
+            if (stampFile.exists() && backupFile.exists()) {
+                continue
+            }
+
+            if (!backupFile.exists()) {
+                Files.copy(ijFile, backupFile, StandardCopyOption.REPLACE_EXISTING)
+            }
+
+            val dimensions = readSplashDimensions(backupFile) ?: continue
+            val (width, height) = dimensions
+            val resourcePath = if (width > 640) SPLASH_2X_RESOURCE else SPLASH_1X_RESOURCE
+            val sourceImage = InfernaLifecycleListener::class.java.getResourceAsStream(resourcePath)?.use {
+                ImageIO.read(it)
+            } ?: continue
+
+            writeSplashCacheFile(ijFile, sourceImage, width, height)
+            Files.writeString(stampFile, INFERNA_THEME_PROVIDER_ID)
+            logger.info("Applied Inferna Visceral splash screen to IDE splash cache (${width}x${height}).")
+        }
+    }
+
+    private fun readSplashDimensions(file: Path): Pair<Int, Int>? {
+        val bytes = Files.newInputStream(file).use { it.readNBytes(8) }
+        if (bytes.size < 8) return null
+        val buffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
+        val width = buffer.int
+        val height = buffer.int
+        if (width !in 64..4096 || height !in 64..4096) return null
+        return width to height
+    }
+
+    private fun writeSplashCacheFile(target: Path, source: BufferedImage, width: Int, height: Int) {
+        val scaled = BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB)
+        val g2d = scaled.createGraphics()
+        try {
+            g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC)
+            g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY)
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+            g2d.drawImage(source, 0, 0, width, height, null)
+        } finally {
+            g2d.dispose()
+        }
+
+        val pixels = IntArray(width * height)
+        scaled.getRGB(0, 0, width, height, pixels, 0, width)
+
+        val buffer = ByteBuffer.allocate(8 + pixels.size * 4).order(ByteOrder.LITTLE_ENDIAN)
+        buffer.putInt(width)
+        buffer.putInt(height)
+        buffer.asIntBuffer().put(pixels)
+
+        val tempFile = Files.createTempFile(target.parent, target.name, ".tmp")
+        try {
+            Files.write(tempFile, buffer.array())
+            try {
+                Files.move(tempFile, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
+            } catch (_: Exception) {
+                Files.move(tempFile, target, StandardCopyOption.REPLACE_EXISTING)
+            }
+        } finally {
+            Files.deleteIfExists(tempFile)
+        }
     }
 
     private fun runOnEdt(action: () -> Unit) {
@@ -105,33 +228,5 @@ class InfernaLifecycleListener : AppLifecycleListener {
             action()
         }
     }
-
-    // Since Inferna is now the only registered theme/scheme, this just self-corrects any session
-    // that still has a different one persisted from before this lock existed (e.g. an install that
-    // picked Darcula pre-upgrade); it's a no-op once already on Inferna.
-    private fun enforceInfernaTheme() {
-        val lafManager = LafManager.getInstance()
-        val infernaLaf = lafManager.installedThemes.firstOrNull { it.name == INFERNA_THEME_NAME }
-        when {
-            infernaLaf == null ->
-                logger.warn("Inferna Visceral theme not found among installed themes; cannot enforce.")
-            lafManager.currentUIThemeLookAndFeel?.name != INFERNA_THEME_NAME -> {
-                lafManager.setCurrentLookAndFeel(infernaLaf, true)
-                lafManager.updateUI()
-                logger.info("Inferna Visceral enforced as the active theme.")
-            }
-        }
-
-        val editorColorsManager = EditorColorsManager.getInstance()
-        val infernaScheme = editorColorsManager.getScheme(INFERNA_THEME_NAME)
-            ?: editorColorsManager.allSchemes.firstOrNull { it.name == INFERNA_THEME_NAME }
-        when {
-            infernaScheme == null ->
-                logger.warn("Inferna Visceral Dark editor color scheme not found among installed schemes.")
-            editorColorsManager.globalScheme.name != INFERNA_THEME_NAME -> {
-                editorColorsManager.setGlobalScheme(infernaScheme)
-                logger.info("Inferna Visceral Dark enforced as the active editor color scheme.")
-            }
-        }
-    }
 }
+

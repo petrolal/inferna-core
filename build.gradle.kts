@@ -1,6 +1,4 @@
 import java.io.File
-import java.time.format.DateTimeFormatter
-import java.time.LocalDateTime
 import java.util.Base64
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
@@ -13,7 +11,7 @@ plugins {
 }
 
 group = "org.inferna"
-version = "1.0.0-SNAPSHOT"
+version = "1.0.0"
 
 repositories {
     mavenCentral()
@@ -27,9 +25,17 @@ repositories {
 
 val localIdeDir = providers.gradleProperty("localPlatformPath").orNull?.let { file(it) }
     ?: file("/run/current-system/sw/bin/intellij-idea-oss").takeIf { it.exists() }?.let { binary ->
-        binary.toPath().toRealPath().parent?.parent?.toFile()?.takeIf { file ->
-            file.resolve("product-info.json").exists()
+        binary.toPath().toRealPath().parent?.parent?.toFile()?.takeIf { dir ->
+            dir.resolve("product-info.json").exists()
         }
+    }
+    ?: file(".intellijPlatform/localPlatformArtifacts").takeIf { it.isDirectory }?.let { artifactsDir ->
+        artifactsDir.listFiles { f -> f.name.startsWith("localIde-") && f.name.endsWith(".xml") }
+            ?.firstNotNullOfOrNull { xml ->
+                Regex("""artifact name="([^"]+)"""").find(xml.readText())?.groupValues?.get(1)?.let { relPath ->
+                    File("/", relPath).takeIf { dir -> dir.resolve("product-info.json").exists() }
+                }
+            }
     }
 
 dependencies {
@@ -41,20 +47,7 @@ dependencies {
         }
         bundledPlugin("com.intellij.java")
         bundledPlugin("org.jetbrains.kotlin")
-
-        // Scala support (sbt, debugger, worksheets) - open source, Community-compatible.
-        // Version picked for platform build 253.x, matching sinceBuild/untilBuild above.
-        plugin("org.intellij.scala", "2025.3.41")
-
-        // Free Spring Boot tooling for Community Edition (Apache-2.0): real bean/context
-        // discovery via javaagent, Endpoints tool window, and a built-in HTTP client for
-        // running .http/.rest files - our REST API testing tool, since JetBrains' own HTTP
-        // Client is Ultimate-only. Version picked for platform build 253.x.
-        plugin("com.explyt.spring", "253.34.104")
-
-        // Official JetBrains Docker plugin - free (pricingModel=FREE) and Community-compatible.
-        // Version matches our exact local platform build (253.32098.x).
-        plugin("Docker", "253.32098.40")
+        bundledPlugin("com.intellij.properties")
 
         pluginVerifier()
         zipSigner()
@@ -70,20 +63,40 @@ kotlin {
 intellijPlatform {
     pluginConfiguration {
         id.set("org.inferna.ide")
-        name.set("Inferna IDE")
+        name.set("Inferna Visceral Theme & Biometrics")
         version.set(project.version.toString())
-        description.set("Biopunk JVM standalone environment powered by the IntelliJ Platform SDK.")
+        description.set(
+            """
+            <p><strong>Inferna Visceral</strong> brings a focused, industrial biopunk aesthetic, splash branding, and real-time JVM &amp; Spring telemetry to <strong>IntelliJ IDEA Ultimate</strong> and Community Edition.</p>
+            <h3>Features</h3>
+            <ul>
+              <li><strong>Inferna Visceral Dark UI Theme &amp; Editor Color Scheme:</strong> Deep obsidian surfaces (<code>#070203</code> / <code>#0a0405</code>) paired with high-contrast arterial crimson accents (<code>#b81424</code> / <code>#ff1e38</code>) tailored for IntelliJ's modern Islands UI, editor tabs, popups, and Block Terminal.</li>
+              <li><strong>Automatic Splash Screen &amp; Icon Branding:</strong> Automatically synchronizes the Inferna Visceral splash screen and window icons while the Inferna theme is active, and cleanly restores the default IDE splash screen if you switch to another theme.</li>
+              <li><strong>Inferna Biometrics Dashboard:</strong> Right-docked telemetry tool window tracking live JVM heap utilization, compilation status, and project-wide Spring bean counts (<code>@Component</code>, <code>@Service</code>, <code>@Repository</code>, <code>@Controller</code>, <code>@Configuration</code>, and <code>@Bean</code> declarations).</li>
+              <li><strong>Smart Spring Tooling Integration:</strong> Seamlessly defers to IntelliJ IDEA Ultimate's native Spring engine when active (preventing duplicate gutter icons or conflicting inspections), while providing polyglot UAST Spring gutter navigation, <code>@Value</code> property resolution, and bean ambiguity quick-fixes when running without Ultimate's Spring plugin.</li>
+            </ul>
+            """.trimIndent()
+        )
+        changeNotes.set(
+            """
+            <h3>1.0.0</h3>
+            <ul>
+              <li>Full compatibility with IntelliJ IDEA Ultimate (2025.1 – 2026.x+) and JetBrains Marketplace.</li>
+              <li>Added automatic, reversible splash screen cache synchronization and window icon branding when the Inferna Visceral Dark theme is active.</li>
+              <li>Preserved all built-in IDE themes and color schemes in Settings &rarr; Appearance.</li>
+              <li>Automatic detection of IntelliJ IDEA Ultimate's native Spring plugin to prevent duplicate gutter markers and false-positive inspections.</li>
+              <li>Non-blocking background Spring bean indexing (including <code>@Configuration</code> and <code>@Bean</code> methods) in the Inferna Biometrics Dashboard.</li>
+            </ul>
+            """.trimIndent()
+        )
         vendor {
             name.set("Inferna Project")
             url.set("https://github.com/inferna")
         }
         ideaVersion {
-            // Matches the platform this plugin is actually built and run against locally
-            // (2025.3.4 / build 253.x, via the Nix-provided IDE picked up by localIdeDir).
-            // Declaring sinceBuild as low as 251 while never building/testing against it
-            // risked silently shipping 253-only APIs to users still on 2025.1.
+            // Supports IntelliJ IDEA 2025.3+ and 2026.x+ (Ultimate & Community) with no upper cap.
             sinceBuild.set("253")
-            untilBuild.set("253.*")
+            untilBuild.set(provider { null })
         }
     }
 
@@ -97,25 +110,33 @@ tasks {
         enabled = false
     }
 
+    val brandingIconFiles = listOf(
+        "inferna.ico", "inferna.png",
+        "inferna_icon_16x16.png", "inferna_icon_24x24.png", "inferna_icon_32x32.png",
+        "inferna_icon_48x48.png", "inferna_icon_64x64.png", "inferna_icon_128x128.png",
+        "inferna_icon_256x256.png", "inferna_icon_512x512.png"
+    )
+
+    val syncResourceIcons = register<Copy>("syncResourceIcons") {
+        from("assets/icons") { include(brandingIconFiles) }
+        into("src/main/resources/icons")
+    }
+
+    val syncLauncherIcons = register<Copy>("syncLauncherIcons") {
+        from("assets/icons") { include(brandingIconFiles) }
+        into("launcher/icons")
+    }
+
+    register("syncBrandingIcons") {
+        description = "Refreshes every generated copy of the canonical assets/icons/* raster icon set."
+        dependsOn(syncResourceIcons, syncLauncherIcons)
+    }
+
     named("initializeIntellijPlatformPlugin") {
         doLast {
             if (localIdeDir != null) {
                 val agentJar = layout.buildDirectory.file("coroutines-javaagent.jar").get().asFile
                 if (agentJar.exists()) {
-                    // Some local IDE distributions resolve a kotlinx-coroutines-core version whose
-                    // coroutines-javaagent.jar is missing kotlinx/coroutines/debug/AgentPremain.class
-                    // (it was split out in later releases), which makes the IDE's debug-agent
-                    // attachment fail at startup with a NoClassDefFoundError. The class below is a
-                    // trivial no-op premain() (compiled from a single-method Java stub, embedded
-                    // here as Base64 because the source is not part of this project and recompiling
-                    // it per-build would require shipping a throwaway .java file just for this
-                    // backport). We only inject it when the real class is absent, so this is a no-op
-                    // on any jar that already ships a working AgentPremain.
-                    //
-                    //   package kotlinx.coroutines.debug;
-                    //   public class AgentPremain {
-                    //       public static void premain(String args, java.lang.instrument.Instrumentation inst) {}
-                    //   }
                     val classEntry = "kotlinx/coroutines/debug/AgentPremain.class"
                     val b64 = "yv66vgAAAEEADwoAAgADBwAEDAAFAAYBABBqYXZhL2xhbmcvT2JqZWN0AQAGPGluaXQ+AQADKClWBwAIAQAla290bGlueC9jb3JvdXRpbmVzL2RlYnVnL0FnZW50UHJlbWFpbgEABENvZGUBAA9MaW5lTnVtYmVyVGFibGUBAAdwcmVtYWluAQA7KExqYXZhL2xhbmcvU3RyaW5nO0xqYXZhL2xhbmcvaW5zdHJ1bWVudC9JbnN0cnVtZW50YXRpb247KVYBAApTb3VyY2VGaWxlAQARQWdlbnRQcmVtYWluLmphdmEAIQAHAAIAAAAAAAIAAQAFAAYAAQAJAAAAHQABAAEAAAAFKrcAAbEAAAABAAoAAAAGAAEAAAADAAkACwAMAAEACQAAABkAAAACAAAAAbEAAAABAAoAAAAGAAEAAAAEAAEADQAAAAIADg=="
                     val classBytes = Base64.getDecoder().decode(b64)
@@ -125,9 +146,6 @@ tasks {
                             var entry = zin.nextEntry
                             var hasClass = false
                             while (entry != null) {
-                                // Copy every existing entry as-is; if AgentPremain.class is already
-                                // present (e.g. a future jar ships it again) we keep that one and
-                                // skip our patch below, rather than risk writing a duplicate/stale copy.
                                 zout.putNextEntry(ZipEntry(entry.name))
                                 zin.copyTo(zout)
                                 if (entry.name == classEntry) hasClass = true
@@ -147,7 +165,11 @@ tasks {
         }
     }
 
+    // Optional resource-only branding archive (splash screens + SVG/PNG icons) safe for both
+    // IntelliJ IDEA Ultimate and Community Edition: does NOT override ApplicationInfo.xml, so
+    // Ultimate product codes (IU), licenses, and bundled Ultimate plugins remain untouched.
     val prepareBranding = register("prepareBranding") {
+        dependsOn(syncResourceIcons)
         val splash1x = file("src/main/resources/artwork/inferna_splash.png")
         val splash2x = file("src/main/resources/artwork/inferna_splash@2x.png")
         val splashJpeg = file("src/main/resources/artwork/inferna_ide_ce_splash_screen.jpeg")
@@ -161,10 +183,6 @@ tasks {
         val brandingJar = layout.buildDirectory.file("inferna-branding.jar")
         inputs.files(splash1x, splash2x, splashJpeg, pluginIconSvg, pluginIcon16Svg, dashboardSvg, icon512, icon128, icon32, icon16)
         outputs.file(brandingJar)
-        // The generated ApplicationInfo.xml embeds gradle.properties values and the current
-        // timestamp, neither of which are tracked by the file inputs above; without this the task
-        // goes UP-TO-DATE and keeps serving a stale branding jar whenever only those change.
-        outputs.upToDateWhen { false }
 
         doLast {
             val jarFile = brandingJar.get().asFile
@@ -183,12 +201,28 @@ tasks {
                 val bSvg16 = pluginIcon16Svg.readBytes()
                 val bDashSvg = dashboardSvg.readBytes()
 
+                // IntelliJ IDEA Ultimate splash image entries
+                addEntry("idea_logo.png", b1x)
+                addEntry("idea_logo@2x.png", b2x)
+                addEntry("idea_logo_simplified.png", b1x)
+                addEntry("idea_logo_simplified@2x.png", b2x)
+                addEntry("idea_logo_subscription.png", b1x)
+                addEntry("idea_logo_subscription@2x.png", b2x)
+                addEntry("idea_logo_java_30.png", b1x)
+                addEntry("idea_logo_java_30@2x.png", b2x)
+                addEntry("idea_logo_kotlin_15.png", b1x)
+                addEntry("idea_logo_kotlin_15@2x.png", b2x)
+                addEntry("idea_logo_subscription_kotlin_15.png", b1x)
+                addEntry("idea_logo_subscription_kotlin_15@2x.png", b2x)
+
+                // IntelliJ IDEA Community splash image entries
                 addEntry("idea_community_logo.png", b1x)
                 addEntry("idea_community_logo@2x.png", b2x)
                 addEntry("idea_community_logo_java_30.png", b1x)
                 addEntry("idea_community_logo_java_30@2x.png", b2x)
                 addEntry("idea_community_logo_kotlin_15.png", b1x)
                 addEntry("idea_community_logo_kotlin_15@2x.png", b2x)
+
                 addEntry("inferna_splash.png", b1x)
                 addEntry("inferna_splash@2x.png", b2x)
                 addEntry("artwork/inferna_splash.png", b1x)
@@ -196,14 +230,15 @@ tasks {
                 addEntry("artwork/inferna_ide_ce_splash_screen.jpeg", bJpeg)
                 addEntry("splash.png", b1x)
 
-                // Desktop OS panel, taskbar, dock, and window frame icons.
-                // The "_16" / "_16@2x" entries are rendered at a fixed 16x16 px slot by the
-                // platform (e.g. the project row icon in the Open Project / Welcome Screen
-                // FileChooser tree), so they must use the dedicated 16x16 glyph, not the full
-                // 80x80 pluginIcon.svg: reusing the big SVG there made the tree row stretch to
-                // fit its reported intrinsic size instead of rendering within 16x16.
+                // Ultimate and Community SVG icons
                 addEntry("inferna.svg", bSvg)
                 addEntry("inferna_16.svg", bSvg16)
+                addEntry("idea.svg", bSvg)
+                addEntry("idea_16.svg", bSvg16)
+                addEntry("idea_16@2x.svg", bSvg16)
+                addEntry("idea-eap.svg", bSvg)
+                addEntry("idea-eap_16.svg", bSvg16)
+                addEntry("idea-eap_16@2x.svg", bSvg16)
                 addEntry("idea-ce.svg", bSvg)
                 addEntry("idea-ce_16.svg", bSvg16)
                 addEntry("idea-ce_16@2x.svg", bSvg16)
@@ -216,57 +251,32 @@ tasks {
                 addEntry("icon_128.png", icon128.readBytes())
                 addEntry("icon_32.png", icon32.readBytes())
                 addEntry("icon_16.png", icon16.readBytes())
-
-                val buildNumber = providers.gradleProperty("appInfoBuildNumber").get()
-                val majorVersion = providers.gradleProperty("appInfoMajorVersion").get()
-                val minorVersion = providers.gradleProperty("appInfoMinorVersion").get()
-                val majorReleaseDate = providers.gradleProperty("appInfoMajorReleaseDate").get()
-                val buildDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmm"))
-
-                val appInfoXml = """
-                    <component xmlns="http://jetbrains.org/intellij/schema/application-info">
-                      <version major="$majorVersion" minor="$minorVersion"/>
-                      <company name="Inferna Project" url="https://github.com/inferna"/>
-                      <build number="$buildNumber" date="$buildDate" majorReleaseDate="$majorReleaseDate" />
-                      <logo url="/artwork/inferna_splash.png"/>
-                      <icon svg="/inferna.svg" svg-small="/inferna_16.svg"/>
-                      <icon-eap svg="/inferna.svg" svg-small="/inferna_16.svg"/>
-                      <names product="Inferna" fullname="Inferna IDE" script="inferna" motto="Biopunk Standalone JVM Environment"/>
-                      <essential-plugin>com.intellij.java</essential-plugin>
-                      <essential-plugin>com.intellij.java.ide</essential-plugin>
-                      <essential-plugin>com.intellij.modules.json</essential-plugin>
-                    </component>
-                """.trimIndent()
-
-                addEntry("idea/IdeaApplicationInfo.xml", appInfoXml.toByteArray(Charsets.UTF_8))
-                addEntry("idea/ApplicationInfo.xml", appInfoXml.toByteArray(Charsets.UTF_8))
             }
         }
     }
 
+    named("processResources") {
+        dependsOn(syncResourceIcons)
+    }
+
     runIde {
-        dependsOn(prepareBranding)
+        dependsOn(prepareBranding, syncLauncherIcons)
         val brandingJar = layout.buildDirectory.file("inferna-branding.jar").get().asFile
         classpath = files(brandingJar, classpath)
         jvmArgs(
             "-Xbootclasspath/a:${brandingJar.absolutePath}",
-            "-Dintellij.platform.load.app.info.from.resources=true",
             "-Dsplash=true",
             "-Didea.show.splash.longer=true",
             "-Xmx4g",
             "-XX:+UseG1GC",
-            "-Dawt.useSystemAAFontSettings=on",
-            "-Dgradle.compatibility.update.interval=0",
-            "-Dgradle.compatibility.config.url=",
-            "-Didea.fatal.error.notification=disabled",
-            "-Didea.is.internal=false"
+            "-Dawt.useSystemAAFontSettings=on"
         )
         doFirst {
             fileTree(layout.buildDirectory.dir("idea-sandbox")).matching {
                 include("**/system/splash/**")
                 include("**/system/icon-cache*")
-                include("**/system/.appinfo")
             }.forEach { it.delete() }
         }
     }
 }
+

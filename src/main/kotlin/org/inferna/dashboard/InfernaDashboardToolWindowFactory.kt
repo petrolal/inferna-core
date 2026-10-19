@@ -1,5 +1,10 @@
 package org.inferna.dashboard
 
+import com.intellij.openapi.application.ModalityState
+import com.intellij.openapi.application.ReadAction
+import com.intellij.openapi.compiler.CompilationStatusListener
+import com.intellij.openapi.compiler.CompileContext
+import com.intellij.openapi.compiler.CompilerTopics
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
@@ -8,7 +13,9 @@ import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPanel
 import com.intellij.ui.content.ContentFactory
+import com.intellij.util.concurrency.AppExecutorUtil
 import org.inferna.icons.InfernaIcons
+import org.inferna.spring.SpringBeanResolver
 import java.awt.BorderLayout
 import java.awt.Font
 import java.awt.GridLayout
@@ -53,6 +60,8 @@ class InfernaDashboardToolWindowFactory : ToolWindowFactory, DumbAware {
         }
 
         val memoryLabel = JBLabel(formatMemoryStats()).apply { foreground = SECONDARY_FOREGROUND }
+        val compilationLabel = JBLabel("Compilation: not run yet").apply { foreground = SUBSYSTEM_FOREGROUND }
+        val springBeansLabel = JBLabel("Spring beans detected: scanning...").apply { foreground = SECONDARY_FOREGROUND }
 
         val statsPanel = JBPanel<JBPanel<*>>(GridLayout(4, 1, 8, 8)).apply {
             background = STATS_BACKGROUND
@@ -62,9 +71,9 @@ class InfernaDashboardToolWindowFactory : ToolWindowFactory, DumbAware {
             )
 
             add(JBLabel("Project: ${project.name}").apply { foreground = PROJECT_FOREGROUND })
-            add(JBLabel("Subsystem: Active").apply { foreground = SUBSYSTEM_FOREGROUND })
+            add(compilationLabel)
             add(memoryLabel)
-            add(JBLabel("Polyglot Engine: Java / Kotlin UAST").apply { foreground = SECONDARY_FOREGROUND })
+            add(springBeansLabel)
         }
 
         panel.add(headerLabel, BorderLayout.NORTH)
@@ -76,7 +85,33 @@ class InfernaDashboardToolWindowFactory : ToolWindowFactory, DumbAware {
 
         val memoryTimer = Timer(MEMORY_REFRESH_MS) { memoryLabel.text = formatMemoryStats() }
         memoryTimer.start()
-        content.setDisposer { memoryTimer.stop() }
+
+        refreshSpringBeanStatsAsync(project, springBeansLabel)
+
+        val compilationListener = object : CompilationStatusListener {
+            override fun compilationFinished(aborted: Boolean, errors: Int, warnings: Int, compileContext: CompileContext) {
+                compilationLabel.text = formatCompilationStats(aborted, errors, warnings)
+                refreshSpringBeanStatsAsync(project, springBeansLabel)
+            }
+        }
+        project.messageBus.connect(content).subscribe(CompilerTopics.COMPILATION_STATUS, compilationListener)
+
+        content.setDisposer {
+            memoryTimer.stop()
+        }
+    }
+
+    private fun refreshSpringBeanStatsAsync(project: Project, label: JBLabel) {
+        if (project.isDisposed) return
+        ReadAction.nonBlocking<Int> {
+            SpringBeanResolver.countProjectBeans(project)
+        }
+            .inSmartMode(project)
+            .expireWith(project)
+            .finishOnUiThread(ModalityState.any()) { count ->
+                label.text = "Spring beans detected: $count"
+            }
+            .submit(AppExecutorUtil.getAppExecutorService())
     }
 
     private fun formatMemoryStats(): String {
@@ -86,4 +121,13 @@ class InfernaDashboardToolWindowFactory : ToolWindowFactory, DumbAware {
         val usedMemoryMb = totalMemoryMb - freeMemoryMb
         return "JVM Memory: ${usedMemoryMb}MB / ${totalMemoryMb}MB"
     }
+
+    private fun formatCompilationStats(aborted: Boolean, errors: Int, warnings: Int): String {
+        return when {
+            aborted -> "Compilation: aborted"
+            errors > 0 -> "Compilation: $errors error(s), $warnings warning(s)"
+            else -> "Compilation: clean ($warnings warning(s))"
+        }
+    }
 }
+

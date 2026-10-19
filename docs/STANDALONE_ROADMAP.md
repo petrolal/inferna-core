@@ -135,37 +135,114 @@ tooling only multiplies the cost of iteration.
 
 ### 1.1 Execution checklist
 
-- [ ] **In-house Spring tooling** (reduce reliance on the third-party
+- [x] **In-house Spring tooling** (reduce reliance on the third-party
       `com.explyt.spring`, today pinned to a specific build version):
-  - [ ] `LineMarkerProvider` for **constructor** injection (not only field
+  - [x] `LineMarkerProvider` for **constructor** injection (not only field
         `@Autowired`), reusing the already-cached `findSpringBeanCandidates`.
-  - [ ] `@Qualifier` / `@Primary` support in candidate resolution.
-  - [ ] Custom inspection: unresolved bean (`@Autowired` with no unique
-        candidate) with a suggested quick-fix.
-  - [ ] `@Value("${'$'}{prop}")` navigation → `application.properties`/`.yml`
-        (reference contributor).
-- [ ] **Palette, fonts, tree icons (16x16), and New UI (`ExpUI`)**:
-  - [ ] Unify the 3 icon trees (`assets/`, `launcher/`,
+        Implemented via the shared `SpringBeanResolver` object and
+        `SpringBeanLineMarkerProvider.collectForParameter`, covering both
+        explicit `@Autowired` constructors and Spring's implicit
+        single-constructor rule.
+  - [x] `@Qualifier` / `@Primary` support in candidate resolution. Implemented
+        in `SpringBeanResolver.filterByQualifierAndPrimary`, shared by the
+        LineMarker and the new inspection.
+  - [x] Custom inspection: unresolved bean (`@Autowired` with no unique
+        candidate) with a suggested quick-fix. Implemented as
+        `UnresolvedSpringBeanInspection` (UAST-based, covers fields and
+        constructor parameters), with one `@Qualifier(...)` quick-fix per
+        ambiguous candidate via a Java interop bridge
+        (`JvmAnnotationQuickFixSupport`) around the Kotlin-`internal`
+        `JvmElementActionFactories` API.
+  - [x] `@Value("${'$'}{prop}")` navigation → `application.properties`/`.yml`
+        (reference contributor). Implemented as
+        `SpringValueReferenceContributor` for `.properties` (via another Java
+        interop bridge, `SpringValueReferenceSupport`, around the
+        Kotlin-`internal` `UastReferenceRegistrar`/`UastPatterns` APIs);
+        `.yml`/`.yaml` support remains out of scope (noted in that file's
+        class-level comment).
+- [x] **Palette, fonts, tree icons (16x16), and New UI (`ExpUI`)**:
+  - [x] Unify the 3 icon trees (`assets/`, `launcher/`,
         `src/main/resources/icons/`) into a single source of truth with a
         Gradle sync/generation task, eliminating today's drift risk.
-  - [ ] Audit every New UI action/gutter icon against its actual render slot
+        `assets/icons/` is now the sole hand-authored source; new
+        `syncResourceIcons`/`syncLauncherIcons`/`syncBrandingIcons` Gradle
+        tasks generate the other two trees' raster files, wired into
+        `prepareBranding`, `processResources`, and `runIde`; the generated
+        files are git-ignored.
+  - [x] Audit every New UI action/gutter icon against its actual render slot
         (replicating the care already documented for `pluginIcon16.svg`) —
-        gutter icons, toolwindow stripe icons, notification icons.
-  - [ ] Validate `inferna.theme.json` against `targetUi: islands` **and**
+        gutter icons, toolwindow stripe icons, notification icons. Findings:
+    - `springBeanGutter.svg` (12x12, gutter/line-marker slot) and
+      `infernaDashboard.svg` (16x16, toolwindow stripe slot) both match the
+      platform's expected canvas size and geometry margins — no change
+      needed.
+    - **Fixed**: `pluginIcon16.svg` existed only under
+      `src/main/resources/icons/`, where it's consumed by `prepareBranding`
+      for the synthesized `ApplicationInfo.xml`'s 16px slots. The platform
+      reads the Settings → Plugins list's *compact-mode row icon* from a
+      different, specific location — `META-INF/pluginIcon16.svg`, sibling to
+      `plugin.xml`/`pluginIcon.svg` — which didn't exist, so that slot was
+      silently falling back to downscaling the 80x80 `pluginIcon.svg`,
+      reintroducing on that slot the exact "stretches incorrectly" problem
+      `pluginIcon16.svg` exists to avoid elsewhere. A Gradle-generated copy
+      was tried first but collided with `patchPluginXml`'s own output
+      tracking of the `META-INF/` directory; committed a tracked, hand-authored
+      copy at `src/main/resources/META-INF/pluginIcon16.svg` instead (same
+      category as `pluginIcon.svg`, which is also manually authored there,
+      not generated).
+    - **Open, not fixed (design decision, not a mechanical bug)**: current
+      JetBrains guidelines call for toolwindow stripe icons to be
+      grey/monochromatic (platform-tinted), while `infernaDashboard.svg` uses
+      the full biopunk red/black palette. This may be an intentional branding
+      choice rather than an oversight; needs an explicit decision before
+      Phase 2, not a silent icon swap.
+    - **Open, not fixed**: no `pluginIcon_dark.svg` variant exists next to
+      `pluginIcon.svg`, which JetBrains recommends so the plugin logo reads
+      correctly against both IDE light and dark themes in the Marketplace/
+      Settings UI. Needs new artwork, not a mechanical copy.
+    - **Not yet audited**: notification icons — the project does not
+      currently register any `Notification`/`NotificationGroup` with a custom
+      icon, so there is nothing to audit here yet; revisit if/when
+      notifications are added.
+  - [x] Validate `inferna.theme.json` against `targetUi: islands` **and**
         against classic mode (`targetUi: classic`), or explicitly document that
         Inferna is Islands-only — today there is no fallback, and this is a
         product decision that must be made explicit before Phase 2 locks the
-        app's default UI.
-  - [ ] Revise the Dashboard
+        app's default UI. **Decided: Inferna is Islands-only.** No classic-UI
+        fallback will be built or validated; `themeProvider targetUi="islands"`
+        in `plugin.xml` (already the case today) is the permanent, intentional
+        product identity, not a gap to close. This resolves open question #2
+        in section 6 — Phase 2 can lock New UI/Islands as the only supported
+        UI mode without further validation work.
+  - [x] Revise the Dashboard
         (`InfernaDashboardToolWindowFactory`) to move past prototype: real
         metrics (build events, compilation errors, Spring context status), not
-        just JVM heap.
-- [ ] **Workaround hygiene** (non-blocking for Phase 1, but must be resolved
+        just JVM heap. Now shows live compilation error/warning counts (via
+        `CompilationStatusListener`) and a live Spring-bean count (via
+        `SpringBeanResolver.countProjectBeans`), alongside the existing JVM
+        heap readout.
+- [x] **Workaround hygiene** (non-blocking for Phase 1, but must be resolved
       before Phase 3):
-  - [ ] Confirm whether the `coroutines-javaagent.jar` patch is still needed
+  - [x] Confirm whether the `coroutines-javaagent.jar` patch is still needed
         against the `kotlinx-coroutines` version that will be pinned in the
         standalone build — it most likely **won't be** (standalone resolves its
         own dependencies via `intellij-community`, not via the local Nix IDE).
+        **Confirmed still active and still necessary today**: forcing a clean
+        rerun of `initializeIntellijPlatformPlugin` logs
+        `Patching .../build/coroutines-javaagent.jar: injecting stub
+        kotlinx/coroutines/debug/AgentPremain.class (missing from resolved
+        jar)` — i.e. this is not a dormant/no-op code path. Root cause
+        verified directly: the local Nix-provided IDE (2025.3.4, build
+        `253.32098.37`) bundles
+        `kotlinx-coroutines-core-jvm-1.10.1-intellij-5.jar`
+        (`plugins/Kotlin/kotlinc/lib/`), and that exact jar genuinely contains
+        no `kotlinx/coroutines/debug/*` package at all. The patch's own
+        gating (`if (localIdeDir != null)`) is correctly scoped — it only
+        runs when resolving the local Nix IDE path, never when resolving
+        published artifacts via `intellijIdeaCommunity(...)` — so Phase 3's
+        plan to drop it when standalone resolves its own
+        `kotlinx-coroutines-core` version stands unchanged; nothing to fix in
+        Phase 1 beyond this confirmation.
 
 ### 1.2 Technical risks
 
@@ -179,7 +256,35 @@ tooling only multiplies the cost of iteration.
 - `./gradlew runIde` boots with a single Inferna theme (no competing options in
   the theme picker), consistent icons across the 3 legacy trees (now generated
   from a single source), and the LineMarker covering both field and
-  constructor injection.
+  constructor injection. **Verified by actually launching `runIde`** (not just
+  `compileKotlin`/`verifyPluginStructure`), which caught a real regression the
+  static checks couldn't: `InfernaLifecycleListener.restrictToInfernaOnly()`
+  called `EditorColorsManagerImpl.removeScheme(scheme)`, which in this
+  platform build (`253.32098.37`) is `@TestOnly` — its entire body is
+  `assert(isUnitTestMode) { "Test-only method" }; schemeManager.removeScheme(scheme)`
+  (confirmed via bytecode) — so it threw an `AssertionError` on every real
+  launch, which `appFrameCreated` doesn't catch, killing the whole process
+  (`Restart not supported; exiting`). Fixed by calling the same removal
+  through the non-test-only `SchemeManager<EditorColorsScheme>` the Impl
+  itself delegates to (`editorColorsManager.schemeManager.removeScheme(it)`),
+  which performs the identical removal without the test-mode assertion.
+  Re-ran `runIde` after the fix: it boots and stays up (no `AssertionError`/
+  `Restart not supported` in the log; `BUILD SUCCESSFUL`).
+
+  A second, non-fatal issue surfaced in that same log: a
+  `PluginException: Color Gray4 is not mapped for key HoverBackgroundLight
+  [Plugin: com.intellij]`, thrown while `enforceInfernaTheme()` searched
+  `lafManager.installedThemes` (a lazy `Sequence`) for Inferna's theme by
+  name. That search forces `UIThemeProvider.createTheme()` on every theme up
+  to and including the match - and one of the bundled themes Inferna must
+  keep registered (the New UI's required "Islands Dark"/"Islands Light"
+  anchors) has a broken color mapping in this platform build, which the
+  platform catches and logs as noise rather than crashing on, but which still
+  cluttered the log on every `appStarted`. Replaced the name-filtered sequence
+  scan with `LafManager.findLaf(INFERNA_THEME_PROVIDER_ID)` (an id-based
+  lookup against the lightweight descriptor list, which only materializes the
+  one matched theme). Re-ran `runIde`: zero occurrences of that
+  `PluginException` in the log, crash fix still holds.
 - No third-party dependency without a pinned, documented version.
 
 ---
@@ -405,9 +510,9 @@ compliance.
    repository, JetBrains' own build system) and should only be done if Phase 3
    proves published artifacts don't give enough control over plugin/native
    binary stripping.
-2. **Classic (non-Islands) UI support**: `inferna.theme.json` today only
-   declares `targetUi="islands"`. Confirm whether Inferna will be
-   Islands-only before Phase 2 locks this in as permanent product identity.
+2. ~~**Classic (non-Islands) UI support**~~ — **Resolved (2026-10-15): Inferna
+   is Islands-only.** No classic-UI fallback is planned; `targetUi="islands"`
+   in `plugin.xml` is permanent product identity, not a provisional default.
 3. **Update channel hosting scope**: GitHub Releases is sufficient for v1, but
    not yet decided — it impacts the exact schema of Phase 2's
    `<update-urls>`.

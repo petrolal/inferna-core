@@ -1,7 +1,112 @@
+# ==============================================================================
+# Inferna IDE - Git Ignore Configuration
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Gradle Build System & Caches
+# ------------------------------------------------------------------------------
 .gradle/
-.kotlin/
-.intellijPlatform/
 build/
 out/
-*.iml
+gradle-app.setting
+.gradletasknamecache
+
+# Ensure Gradle wrapper binary and configuration are always tracked
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+
+# ------------------------------------------------------------------------------
+# IntelliJ Platform SDK & Plugin Development Artifacts
+# ------------------------------------------------------------------------------
+.intellijPlatform/
+inferna-branding.jar
+coroutines-javaagent-temp.jar
+crash-dumps/
+
+# ------------------------------------------------------------------------------
+# JetBrains IDE / Project Metadata
+# ------------------------------------------------------------------------------
 .idea/
+*.iml
+*.iws
+*.ipr
+
+# ------------------------------------------------------------------------------
+# Kotlin & Java Compiler Artifacts
+# ------------------------------------------------------------------------------
+.kotlin/
+*.class
+*.log
+*.hprof
+hs_err_pid*
+replay_pid*
+
+# ------------------------------------------------------------------------------
+# Local Properties & Secrets / Keystores
+# ------------------------------------------------------------------------------
+local.properties
+*.keystore
+*.jks
+*.p12
+*.pem
+*.key
+.env
+.env.*
+!.env.example
+
+# ------------------------------------------------------------------------------
+# Nix / NixOS Build Outputs
+# ------------------------------------------------------------------------------
+result
+result-*
+
+# ------------------------------------------------------------------------------
+# OS-Specific Files
+# ------------------------------------------------------------------------------
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+
+# ------------------------------------------------------------------------------
+# Generated Branding Assets
+# ------------------------------------------------------------------------------
+# assets/icons/ is the single authored source of truth for Inferna's raster icons.
+# launcher/icons/ and src/main/resources/icons/'s copies are produced by the
+# syncBrandingIcons Gradle task (see build.gradle.kts) so the three trees can
+# never drift out of sync again - only the generated copies are ignored here,
+# not the hand-authored SVGs that also live in src/main/resources/icons/.
+launcher/icons/inferna.ico
+launcher/icons/inferna.png
+launcher/icons/inferna_icon_*.png
+src/main/resources/icons/inferna.ico
+src/main/resources/icons/inferna.png
+src/main/resources/icons/inferna_icon_*.png
+
+# ------------------------------------------------------------------------------
+# Editor & Temporary Files
+# ------------------------------------------------------------------------------
+.vscode/
+*.swp
+*.swo
+*.bak
+*.orig
+*#
+.#*
