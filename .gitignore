@@ -112,3 +112,14 @@ src/main/resources/icons/inferna_icon_*.png
 *.orig
 *#
 .#*
+
+# ------------------------------------------------------------------------------
+# AI Assistant Local Folders
+# ------------------------------------------------------------------------------
+.claude/
+.cursor/
+.windsurf/
+.aider*
+.copilot/
+.codeium/
+.continue/
