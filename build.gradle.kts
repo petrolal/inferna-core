@@ -308,5 +308,13 @@ tasks {
             }.forEach { it.delete() }
         }
     }
+
+    intellijPlatform {
+        publishing {
+            token.set(providers.environmentVariable("JETBRAINS_MARKETPLACE_TOKEN"))
+            // For test channels declare eap, default or beta
+            channels.set(listOf("eap"))
+        }
+    }
 }
 

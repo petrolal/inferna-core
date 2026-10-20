@@ -20,7 +20,7 @@
 <idea-plugin>
     <id>org.inferna.core</id>
     <name>Inferna Core</name>
-    <vendor email="petrolalucas@gmail.com" url="https://github.com/inferna/inferna-core">Lucas Henrique Novais de Araújo Petrola</vendor>
+    <vendor email="petrolalucas@gmail.com" url="https://github.com/petrolal/inferna-core">Petrolal</vendor>
 
     <description><![CDATA[
       <p><strong>Inferna Visceral</strong> brings a focused, industrial biopunk aesthetic, splash branding, and real-time JVM &amp; Spring telemetry to <strong>IntelliJ IDEA</strong> — both Community and Ultimate.</p>
@@ -101,10 +101,10 @@
         <localInspection language="UAST"
                          groupName="Inferna"
                          shortName="InfernaUnresolvedSpringBean"
-                         displayName="Unresolved or ambiguous Spring bean injection"
                          enabledByDefault="true"
                          level="WARNING"
-                         implementationClass="org.inferna.spring.UnresolvedSpringBeanInspection"/>
+                         implementationClass="org.inferna.spring.UnresolvedSpringBeanInspection"
+                         key="inspection.inferna.unresolved.spring.bean.display.name" bundle="messages.InfernaBundle"/>
     </extensions>
 
     <extensions defaultExtensionNs="org.jetbrains.kotlin">
