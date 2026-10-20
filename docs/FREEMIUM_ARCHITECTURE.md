@@ -1,6 +1,6 @@
 <!--
   ~ Inferna Core - Biopunk JVM & Spring Developer Environment
-  ~ Copyright (C) 2026 Lucas Henrique Novais de Araújo Petrola <petrolalucas@gmail.com>
+  ~ Copyright (C) 2026 Lucas Henrique Novais de Araujo Petrola <petrolalucas@gmail.com>
   ~ SPDX-License-Identifier: GPL-3.0-or-later
   -->
 # Inferna Core — Freemium Open-Core Architecture (Option A)

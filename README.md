@@ -1,6 +1,6 @@
 <!--
   ~ Inferna Core - Biopunk JVM & Spring Developer Environment
-  ~ Copyright (C) 2026 Lucas Henrique Novais de Araújo Petrola <petrolalucas@gmail.com>
+  ~ Copyright (C) 2026 Lucas Henrique Novais de Araujo Petrola <petrolalucas@gmail.com>
   ~ SPDX-License-Identifier: GPL-3.0-or-later
   -->
 <p align="center">
@@ -113,7 +113,7 @@ PRIVATE_KEY_PASSWORD="<private-key-password>" \
 
 ## 📄 License
 
-Copyright (C) 2026 **Lucas Henrique Novais de Araújo Petrola** `<petrolalucas@gmail.com>`
+Copyright (C) 2026 **Lucas Henrique Novais de Araujo Petrola** `<petrolalucas@gmail.com>`
 
 This project is licensed under the **GNU General Public License v3.0 or later** (`GPL-3.0-or-later`).
 See the [`LICENSE`](LICENSE) file for the full, official text as published by the
@@ -138,7 +138,7 @@ Every source file carries a header identifying the project, its license, and
 its copyright holder. When redistributing this project or a derivative work:
 
 - Do not remove or alter the copyright header in existing source files.
-- Keep `Copyright (C) 2026 Lucas Henrique Novais de Araújo Petrola <petrolalucas@gmail.com>`
+- Keep `Copyright (C) 2026 Lucas Henrique Novais de Araujo Petrola <petrolalucas@gmail.com>`
   intact in every file that originates from this project, alongside any
   additional copyright lines for your own contributions.
 - Credit **Inferna Core** and its original author in any public

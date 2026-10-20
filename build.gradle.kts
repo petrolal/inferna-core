@@ -1,6 +1,6 @@
 /*
  * Inferna Core - Biopunk JVM & Spring Developer Environment
- * Copyright (C) 2026 Lucas Henrique Novais de Araújo Petrola <petrolalucas@gmail.com>
+ * Copyright (C) 2026 Lucas Henrique Novais de Araujo Petrola <petrolalucas@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -113,7 +113,7 @@ intellijPlatform {
             """.trimIndent()
         )
         vendor {
-            name.set("Lucas Henrique Novais de Araújo Petrola")
+            name.set("Lucas Henrique Novais de Araujo Petrola")
             email.set("petrolalucas@gmail.com")
             url.set("https://github.com/petrolal/inferna-core")
         }
