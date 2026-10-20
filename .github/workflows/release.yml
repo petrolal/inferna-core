@@ -1,6 +1,6 @@
 name: Conventional Commit Release
 
-# Watches every push to main for Conventional Commits (https://www.conventionalcommits.org/)
+# Watches every push to master for Conventional Commits (https://www.conventionalcommits.org/)
 # since the last tag. Any `feat:`/`fix:` (or a `!:`/"BREAKING CHANGE" breaking marker) bumps
 # the version, commits it, tags it, and publishes a GitHub Release — which in turn triggers
 # .github/workflows/publish.yml to build, sign, and publish that version to the JetBrains
@@ -8,7 +8,7 @@ name: Conventional Commit Release
 
 on:
   push:
-    branches: [main]
+    branches: [master]
 
 permissions:
   contents: write
