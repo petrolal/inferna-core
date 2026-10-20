@@ -63,8 +63,26 @@ This repository is 100% public under **GPL-3.0-or-later**: every feature listed 
 
 ### Publishing to JetBrains Marketplace
 
+Handled by [`.github/workflows/publish.yml`](.github/workflows/publish.yml): publishing a
+GitHub Release (or a manual `workflow_dispatch`) runs tests, verifies the tagged version
+matches `build.gradle.kts`, signs the zip, and publishes it. A release whose version
+contains a pre-release suffix (e.g. `1.0.0-SNAPSHOT`) is routed to the `eap` channel
+automatically; dropping the suffix (`1.0.0`) routes it to the default (stable) channel —
+see `publishing { channels.set(...) }` in `build.gradle.kts`.
+
+Required repository secrets: `JETBRAINS_MARKETPLACE_TOKEN` (publish auth), and
+`CERTIFICATE_CHAIN` / `PRIVATE_KEY` / `PRIVATE_KEY_PASSWORD` (plugin signing — see
+[JetBrains' plugin-signing docs](https://plugins.jetbrains.com/docs/intellij/plugin-signing.html)
+to generate them).
+
+To publish manually from a local checkout:
+
 ```bash
-INTELLIJ_PUBLISH_TOKEN="<your-marketplace-token>" ./gradlew publishPlugin
+JETBRAINS_MARKETPLACE_TOKEN="<your-marketplace-token>" \
+CERTIFICATE_CHAIN="<pem-cert-chain>" \
+PRIVATE_KEY="<pem-private-key>" \
+PRIVATE_KEY_PASSWORD="<private-key-password>" \
+./gradlew publishPlugin
 ```
 
 ## Development & Verification

@@ -115,7 +115,7 @@ intellijPlatform {
         vendor {
             name.set("Lucas Henrique Novais de Araújo Petrola")
             email.set("petrolalucas@gmail.com")
-            url.set("https://github.com/inferna/inferna-core")
+            url.set("https://github.com/petrolal/inferna-core")
         }
         ideaVersion {
             // Supports IntelliJ IDEA 2025.3+ and 2026.x+ (Ultimate & Community) with no upper cap.
@@ -124,9 +124,32 @@ intellijPlatform {
         }
     }
 
-    publishing {
-        token.set(providers.environmentVariable("INTELLIJ_PUBLISH_TOKEN"))
+    // Marketplace requires a signed zip; both secrets are only read (never required) here, so a
+    // plain local `buildPlugin` still works with no secrets configured — only `signPlugin`/
+    // `publishPlugin` actually need them, and those only run in CI (.github/workflows/publish.yml).
+    signing {
+        certificateChain.set(providers.environmentVariable("CERTIFICATE_CHAIN"))
+        privateKey.set(providers.environmentVariable("PRIVATE_KEY"))
+        password.set(providers.environmentVariable("PRIVATE_KEY_PASSWORD"))
     }
+
+    publishing {
+        // Must match the secret name .github/workflows/publish.yml actually injects — this was
+        // previously split across two conflicting `publishing {}` blocks (one here reading
+        // INTELLIJ_PUBLISH_TOKEN, a second misplaced inside `tasks {}` silently overriding it with
+        // JETBRAINS_MARKETPLACE_TOKEN and a hardcoded `channels = ["eap"]`), so the token this
+        // build actually used never matched what the README documented.
+        token.set(providers.environmentVariable("JETBRAINS_MARKETPLACE_TOKEN"))
+        // A version with a pre-release suffix (e.g. "1.0.0-SNAPSHOT") always goes to the "eap"
+        // channel; dropping the suffix for a real release (e.g. "1.0.0") routes it to the default
+        // (stable) channel automatically — no more hand-editing this block per release.
+        channels.set(listOf(if (project.version.toString().contains('-')) "eap" else "default"))
+    }
+}
+
+tasks.register("printVersion") {
+    description = "Prints the plugin version this build would publish, for CI tag/version checks."
+    doLast { println(project.version) }
 }
 
 tasks {
@@ -306,14 +329,6 @@ tasks {
                 include("**/system/splash/**")
                 include("**/system/icon-cache*")
             }.forEach { it.delete() }
-        }
-    }
-
-    intellijPlatform {
-        publishing {
-            token.set(providers.environmentVariable("JETBRAINS_MARKETPLACE_TOKEN"))
-            // For test channels declare eap, default or beta
-            channels.set(listOf("eap"))
         }
     }
 }

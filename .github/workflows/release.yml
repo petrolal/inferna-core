@@ -1,0 +1,128 @@
+name: Conventional Commit Release
+
+# Watches every push to main for Conventional Commits (https://www.conventionalcommits.org/)
+# since the last tag. Any `feat:`/`fix:` (or a `!:`/"BREAKING CHANGE" breaking marker) bumps
+# the version, commits it, tags it, and publishes a GitHub Release — which in turn triggers
+# .github/workflows/publish.yml to build, sign, and publish that version to the JetBrains
+# Marketplace. A push with only other prefixes (docs:, chore:, refactor:, etc.) is a no-op.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  tag-and-release:
+    name: Determine version bump & release
+    runs-on: ubuntu-latest
+    # GitHub Actions already skips a push whose head commit contains [skip ci]/[ci skip] — this
+    # mirrors that so the version-bump commit this job itself pushes (tagged [skip ci] below)
+    # never re-triggers itself.
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    outputs:
+      bump: ${{ steps.bump.outputs.bump }}
+      tag: ${{ steps.bump.outputs.tag }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine version bump from commit messages
+        id: bump
+        run: |
+          set -euo pipefail
+
+          current_version="$(grep -m1 '^version = ' build.gradle.kts | sed -E 's/version = "([^"]+)".*/\1/' | sed 's/-SNAPSHOT$//')"
+          last_tag="$(git tag --list 'v*' --sort=-v:refname | head -n1 || true)"
+
+          if [ -z "$last_tag" ]; then
+            range=""
+            base_version="$current_version"
+            first_release=true
+          else
+            range="${last_tag}..HEAD"
+            base_version="${last_tag#v}"
+            first_release=false
+          fi
+
+          commits="$(git log ${range} --pretty=format:'%s%n%b' 2>/dev/null || true)"
+
+          bump="none"
+          if echo "$commits" | grep -qE '^[a-zA-Z]+(\([^)]*\))?!:|BREAKING CHANGE'; then
+            bump="major"
+          elif echo "$commits" | grep -qE '^feat(\([^)]*\))?:'; then
+            bump="minor"
+          elif echo "$commits" | grep -qE '^fix(\([^)]*\))?:'; then
+            bump="patch"
+          fi
+
+          if [ "$bump" = "none" ]; then
+            echo "No feat:/fix:/!: commits since ${last_tag:-the beginning of history} — skipping release."
+            echo "bump=none" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ "$first_release" = true ]; then
+            # Nothing tagged yet: release whatever version build.gradle.kts already carries
+            # (e.g. "1.0.0-SNAPSHOT" -> "1.0.0") rather than bumping from 0.0.0.
+            new_version="$base_version"
+          else
+            IFS='.' read -r major minor patch <<< "$base_version"
+            case "$bump" in
+              major) major=$((major + 1)); minor=0; patch=0 ;;
+              minor) minor=$((minor + 1)); patch=0 ;;
+              patch) patch=$((patch + 1)) ;;
+            esac
+            new_version="${major}.${minor}.${patch}"
+          fi
+
+          echo "Bump: $bump -> $new_version"
+          echo "bump=$bump" >> "$GITHUB_OUTPUT"
+          echo "version=$new_version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$new_version" >> "$GITHUB_OUTPUT"
+
+      - name: Bump version in build.gradle.kts
+        if: steps.bump.outputs.bump != 'none'
+        run: |
+          sed -i "s/^version = \".*\"/version = \"${{ steps.bump.outputs.version }}\"/" build.gradle.kts
+          grep -n '^version = ' build.gradle.kts
+
+      - name: Commit version bump
+        if: steps.bump.outputs.bump != 'none'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add build.gradle.kts
+          git commit -m "chore(release): ${{ steps.bump.outputs.tag }} [skip ci]"
+          git push origin HEAD:${{ github.ref_name }}
+
+      - name: Tag release commit
+        if: steps.bump.outputs.bump != 'none'
+        run: |
+          git tag "${{ steps.bump.outputs.tag }}"
+          git push origin "${{ steps.bump.outputs.tag }}"
+
+      - name: Create GitHub Release
+        if: steps.bump.outputs.bump != 'none'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ steps.bump.outputs.tag }}" \
+            --title "${{ steps.bump.outputs.tag }}" \
+            --generate-notes
+
+  publish:
+    name: Build, Sign & Publish Plugin
+    needs: tag-and-release
+    # A Release created above with the default GITHUB_TOKEN does not fire publish.yml's own
+    # `release: published` trigger (GitHub Actions' loop-prevention rule), so it is called
+    # directly here instead, on the same commit/tag this job just created.
+    if: needs.tag-and-release.outputs.bump != 'none'
+    uses: ./.github/workflows/publish.yml
+    with:
+      ref: ${{ needs.tag-and-release.outputs.tag }}
+    secrets: inherit
