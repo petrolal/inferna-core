@@ -48,6 +48,7 @@ import kotlin.io.path.name
 private const val INFERNA_THEME_NAME = "Inferna Visceral Dark"
 private const val INFERNA_THEME_PROVIDER_ID = "org.inferna.theme.visceral"
 private const val FIRST_RUN_KEY = "org.inferna.ide.theme.initialized"
+private const val BRANDING_SETTING_ID = "org.inferna.branding.enabled"
 private const val SPLASH_1X_RESOURCE = "/artwork/inferna_splash.png"
 private const val SPLASH_2X_RESOURCE = "/artwork/inferna_splash@2x.png"
 
@@ -67,13 +68,6 @@ class InfernaLifecycleListener : AppLifecycleListener, LafManagerListener {
 
     override fun appFrameCreated(commandLineArgs: MutableList<String>) {
         logger.info("Inferna Visceral platform plugin initializing...")
-        runOnEdt {
-            try {
-                AdvancedSettings.setBoolean("ide.ui.theme.custom.islands", true)
-            } catch (e: Exception) {
-                logger.debug("AdvancedSettings ide.ui.theme.custom.islands not available: ${e.message}")
-            }
-        }
     }
 
     override fun appStarted() {
@@ -102,8 +96,6 @@ class InfernaLifecycleListener : AppLifecycleListener, LafManagerListener {
                 logger.info("Activated Inferna Visceral Dark theme on initial plugin setup.")
             }
             syncEditorColorScheme()
-        } else if (isInfernaActive(lafManager)) {
-            syncEditorColorScheme()
         }
     }
 
@@ -123,7 +115,9 @@ class InfernaLifecycleListener : AppLifecycleListener, LafManagerListener {
     }
 
     private fun syncBrandingForCurrentTheme() {
-        val active = isInfernaActive()
+        // Splash/icon branding is a toggle in Settings | Advanced Settings; when off, the
+        // default IDE splash cache is restored and window icons are left alone.
+        val active = isInfernaActive() && AdvancedSettings.getBoolean(BRANDING_SETTING_ID)
         if (active) {
             applyFrameIcons()
         }

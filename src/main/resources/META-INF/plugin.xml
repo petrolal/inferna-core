@@ -23,7 +23,7 @@
     <vendor email="petrolalucas@gmail.com" url="https://github.com/inferna">Lucas Petrola</vendor>
 
     <description><![CDATA[
-      <p><strong>Inferna Visceral</strong> brings a focused, industrial biopunk aesthetic, splash branding, and real-time JVM &amp; Spring telemetry to <strong>IntelliJ IDEA Ultimate</strong> and Community Edition.</p>
+      <p><strong>Inferna Visceral</strong> brings a focused, industrial biopunk aesthetic, splash branding, and real-time JVM &amp; Spring telemetry to <strong>IntelliJ IDEA Ultimate</strong>.</p>
       <h3>Features</h3>
       <ul>
         <li><strong>Inferna Visceral Dark UI Theme &amp; Editor Color Scheme:</strong> Deep obsidian surfaces (<code>#070203</code> / <code>#0a0405</code>) paired with high-contrast arterial crimson accents (<code>#b81424</code> / <code>#ff1e38</code>) tailored for IntelliJ's modern Islands UI, editor tabs, popups, and Block Terminal.</li>
@@ -58,6 +58,12 @@
     </applicationListeners>
 
     <extensions defaultExtensionNs="com.intellij">
+        <!-- Opt-out toggle for splash cache rewriting and window icon replacement -->
+        <advancedSetting id="org.inferna.branding.enabled"
+                         default="true"
+                         bundle="messages.InfernaBundle"
+                         groupKey="advanced.setting.group.inferna"/>
+
         <!-- Biopunk Theme Provider & Editor Color Scheme -->
         <themeProvider id="org.inferna.theme.visceral" path="/theme/inferna.theme.json" targetUi="islands"/>
         <bundledColorScheme id="Inferna Visceral Dark" path="/theme/inferna.xml"/>
@@ -78,7 +84,7 @@
 
         <!-- Unresolved / ambiguous Spring bean injection point (defers to Ultimate native Spring when active) -->
         <localInspection language="UAST"
-                         groupName="Spring"
+                         groupName="Inferna"
                          shortName="InfernaUnresolvedSpringBean"
                          displayName="Unresolved or ambiguous Spring bean injection"
                          enabledByDefault="true"

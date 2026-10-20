@@ -63,7 +63,7 @@ dependencies {
         if (localIdeDir != null) {
             local(localIdeDir)
         } else {
-            intellijIdeaCommunity(providers.gradleProperty("platformVersion"))
+            intellijIdeaUltimate(providers.gradleProperty("platformVersion"))
         }
         bundledPlugin("com.intellij.java")
         bundledPlugin("org.jetbrains.kotlin")
@@ -87,7 +87,7 @@ intellijPlatform {
         version.set(project.version.toString())
         description.set(
             """
-            <p><strong>Inferna Visceral</strong> brings a focused, industrial biopunk aesthetic, splash branding, and real-time JVM &amp; Spring telemetry to <strong>IntelliJ IDEA Ultimate</strong> and Community Edition.</p>
+            <p><strong>Inferna Visceral</strong> brings a focused, industrial biopunk aesthetic, splash branding, and real-time JVM &amp; Spring telemetry to <strong>IntelliJ IDEA Ultimate</strong>.</p>
             <h3>Features</h3>
             <ul>
               <li><strong>Inferna Visceral Dark UI Theme &amp; Editor Color Scheme:</strong> Deep obsidian surfaces (<code>#070203</code> / <code>#0a0405</code>) paired with high-contrast arterial crimson accents (<code>#b81424</code> / <code>#ff1e38</code>) tailored for IntelliJ's modern Islands UI, editor tabs, popups, and Block Terminal.</li>
