@@ -27,7 +27,7 @@ import java.util.zip.ZipOutputStream
 plugins {
     id("java")
     kotlin("jvm") version "2.2.20"
-    id("org.jetbrains.intellij.platform") version "2.2.1"
+    id("org.jetbrains.intellij.platform") version "2.19.0"
 }
 
 group = "org.inferna"
@@ -63,10 +63,11 @@ dependencies {
         if (localIdeDir != null) {
             local(localIdeDir)
         } else {
-            // Community is the lowest common denominator: the plugin must build and
-            // verify against it, then run unmodified on Ultimate (richer host, strict
-            // superset of Community's API surface).
-            intellijIdeaCommunity(providers.gradleProperty("platformVersion"))
+            // Since 2025.3, JetBrains ships a single unified build (no more
+            // standalone Community artifact) - intellijIdea() resolves it, and
+            // the plugin still builds/verifies/runs unmodified on both former
+            // Community and Ultimate feature sets.
+            intellijIdea(providers.gradleProperty("platformVersion"))
         }
         bundledPlugin("com.intellij.java")
         bundledPlugin("org.jetbrains.kotlin")
