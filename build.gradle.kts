@@ -31,7 +31,7 @@ plugins {
 }
 
 group = "org.inferna"
-version = "1.0.0-SNAPSHOT"
+version = "1.0.0-beta.1"
 
 repositories {
     mavenCentral()
@@ -140,10 +140,17 @@ intellijPlatform {
         // JETBRAINS_MARKETPLACE_TOKEN and a hardcoded `channels = ["eap"]`), so the token this
         // build actually used never matched what the README documented.
         token.set(providers.environmentVariable("JETBRAINS_MARKETPLACE_TOKEN"))
-        // A version with a pre-release suffix (e.g. "1.0.0-SNAPSHOT") always goes to the "eap"
-        // channel; dropping the suffix for a real release (e.g. "1.0.0") routes it to the default
-        // (stable) channel automatically — no more hand-editing this block per release.
-        channels.set(listOf(if (project.version.toString().contains('-')) "eap" else "default"))
+        // The pre-release label names the channel: "1.0.0-beta.1" -> "beta", "1.0.0-eap.3" ->
+        // "eap", "1.0.0-rc.1" -> "rc". A plain "1.0.0" (no "-") goes to "default" (stable). No
+        // more hand-editing this block per release — bump the version, the channel follows.
+        channels.set(
+            listOf(
+                project.version.toString()
+                    .substringAfter('-', missingDelimiterValue = "default")
+                    .substringBefore('.')
+                    .lowercase()
+            )
+        )
     }
 }
 
