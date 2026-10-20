@@ -1,7 +1,7 @@
 {
   "name": "Inferna Visceral Dark",
   "dark": true,
-  "author": "Lucas Petrola <petrolalucas@gmail.com>",
+  "author": "Lucas Henrique Novais de Araújo Petrola <petrolalucas@gmail.com>",
   "editorScheme": "/theme/inferna.xml",
   "parentTheme": "ExperimentalDark",
   "colors": {

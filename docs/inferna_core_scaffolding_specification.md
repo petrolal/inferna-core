@@ -1,6 +1,6 @@
 <!--
-  ~ Inferna Visceral — Biopunk Theme, Splash Branding & Biometrics for IntelliJ IDEA
-  ~ Copyright (C) 2026 Lucas Petrola <petrolalucas@gmail.com>
+  ~ Inferna Core - Biopunk JVM & Spring Developer Environment
+  ~ Copyright (C) 2026 Lucas Henrique Novais de Araújo Petrola <petrolalucas@gmail.com>
   ~ SPDX-License-Identifier: GPL-3.0-or-later
   -->
 # Inferna IDE - Project Scaffolding Guide
@@ -12,7 +12,7 @@ This document contains the complete file tree and code for the **Inferna IDE** p
 ## 1. Directory Structure
 
 ```text
-inferna-ide/
+inferna-core/
 ├── settings.gradle.kts
 ├── gradle.properties
 ├── build.gradle.kts
@@ -21,7 +21,7 @@ inferna-ide/
 │   │   ├── inferna.ico
 │   │   ├── inferna.png
 │   │   └── inferna_icon_<size>.png
-│   └── inferna-ide-assets.zip
+│   └── inferna-core-assets.zip
 ├── launcher/
 │   └── icons/
 │       ├── inferna.ico
@@ -41,7 +41,7 @@ inferna-ide/
         │           └── InfernaDashboardToolWindowFactory.kt
         └── resources/
             ├── artwork/
-            │   ├── inferna_ide_ce_splash_screen.jpeg
+            │   ├── inferna_core_ce_splash_screen.jpeg
             │   ├── inferna_splash.png
             │   ├── inferna_splash@2x.png
             │   └── inferna_splash_hi_res.png
@@ -66,7 +66,7 @@ inferna-ide/
 
 ### `settings.gradle.kts`
 ```kotlin
-rootProject.name = "inferna-ide"
+rootProject.name = "inferna-core"
 
 pluginManagement {
     repositories {
@@ -152,7 +152,7 @@ kotlin {
 
 intellijPlatform {
     pluginConfiguration {
-        id.set("org.inferna.ide")
+        id.set("org.inferna.core")
         name.set("Inferna IDE")
         version.set(project.version.toString())
         description.set("Biopunk JVM standalone environment powered by the IntelliJ Platform SDK.")
@@ -211,7 +211,7 @@ tasks {
     val prepareBranding = register("prepareBranding") {
         val splash1x = file("src/main/resources/artwork/inferna_splash.png")
         val splash2x = file("src/main/resources/artwork/inferna_splash@2x.png")
-        val splashJpeg = file("src/main/resources/artwork/inferna_ide_ce_splash_screen.jpeg")
+        val splashJpeg = file("src/main/resources/artwork/inferna_core_ce_splash_screen.jpeg")
         val pluginIconSvg = file("src/main/resources/META-INF/pluginIcon.svg")
         val dashboardSvg = file("src/main/resources/icons/infernaDashboard.svg")
         val icon512 = file("src/main/resources/icons/inferna_icon_512x512.png")
@@ -248,7 +248,7 @@ tasks {
                 addEntry("inferna_splash@2x.png", b2x)
                 addEntry("artwork/inferna_splash.png", b1x)
                 addEntry("artwork/inferna_splash@2x.png", b2x)
-                addEntry("artwork/inferna_ide_ce_splash_screen.jpeg", bJpeg)
+                addEntry("artwork/inferna_core_ce_splash_screen.jpeg", bJpeg)
                 addEntry("splash.png", b1x)
 
                 // Desktop OS panel, taskbar, dock, and window frame icons
@@ -323,7 +323,7 @@ tasks {
 ### `src/main/resources/META-INF/plugin.xml`
 ```xml
 <idea-plugin>
-    <id>org.inferna.ide</id>
+    <id>org.inferna.core</id>
     <name>Inferna IDE</name>
     <vendor>Inferna Project</vendor>
 

@@ -1,6 +1,6 @@
 /*
- * Inferna Visceral — Biopunk Theme, Splash Branding & Biometrics for IntelliJ IDEA
- * Copyright (C) 2026 Lucas Petrola <petrolalucas@gmail.com>
+ * Inferna Core - Biopunk JVM & Spring Developer Environment
+ * Copyright (C) 2026 Lucas Henrique Novais de Araújo Petrola <petrolalucas@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-rootProject.name = "inferna-ide"
+rootProject.name = "inferna-core"
 
 pluginManagement {
     repositories {

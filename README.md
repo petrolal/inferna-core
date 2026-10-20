@@ -1,9 +1,9 @@
 <!--
-  ~ Inferna Visceral — Biopunk Theme, Splash Branding & Biometrics for IntelliJ IDEA
-  ~ Copyright (C) 2026 Lucas Petrola <petrolalucas@gmail.com>
+  ~ Inferna Core - Biopunk JVM & Spring Developer Environment
+  ~ Copyright (C) 2026 Lucas Henrique Novais de Araújo Petrola <petrolalucas@gmail.com>
   ~ SPDX-License-Identifier: GPL-3.0-or-later
   -->
-# Inferna Visceral — Theme, Splash Branding & Biometrics for IntelliJ IDEA
+# Inferna Core
 
 <p align="center">
   <img src="assets/icons/inferna.png" alt="Inferna Logo" width="128" height="128" />
@@ -19,7 +19,7 @@
   <img src="https://img.shields.io/badge/Java-21%2B-orange.svg" alt="Java 21+" />
   <img src="https://img.shields.io/badge/Kotlin-2.2.20-purple.svg" alt="Kotlin 2.2" />
   <img src="https://img.shields.io/badge/IntelliJ%20IDEA-Ultimate%20%26%20Community-red.svg" alt="IntelliJ IDEA Ultimate & Community" />
-  <img src="https://img.shields.io/badge/Version-1.0.0-crimson.svg" alt="Version 1.0.0" />
+  <img src="https://img.shields.io/badge/Version-1.0.0--SNAPSHOT-crimson.svg" alt="Version 1.0.0-SNAPSHOT" />
 </p>
 
 ---
@@ -63,7 +63,7 @@
    ```
 2. Open **IntelliJ IDEA Ultimate** → **Settings** (`Ctrl+Alt+S`) → **Plugins**.
 3. Click the gear icon (**⚙️**) → **Install Plugin from Disk...**
-4. Select `build/distributions/inferna-ide-1.0.0.zip` and restart/apply if prompted.
+4. Select `build/distributions/inferna-core-1.0.0-SNAPSHOT.zip` and restart/apply if prompted.
 
 ### Publishing to JetBrains Marketplace
 
@@ -82,7 +82,7 @@ INTELLIJ_PUBLISH_TOKEN="<your-marketplace-token>" ./gradlew publishPlugin
 ### Build Commands
 
 ```bash
-# Package the Marketplace-ready plugin zip (build/distributions/inferna-ide-1.0.0.zip)
+# Package the Marketplace-ready plugin zip (build/distributions/inferna-core-1.0.0-SNAPSHOT.zip)
 ./gradlew buildPlugin
 
 # Run automated tests
@@ -94,11 +94,41 @@ INTELLIJ_PUBLISH_TOKEN="<your-marketplace-token>" ./gradlew publishPlugin
 
 ---
 
-## 📄 License & Copyright
+## 📄 License
 
-Copyright (C) 2026 **Lucas Petrola** `<petrolalucas@gmail.com>`
+Copyright (C) 2026 **Lucas Henrique Novais de Araújo Petrola** `<petrolalucas@gmail.com>`
 
-This project is licensed under the **GNU General Public License v3.0 or later** (`GPL-3.0-or-later`).  
-See the [`LICENSE`](LICENSE) file for the full license text.
+This project is licensed under the **GNU General Public License v3.0 or later** (`GPL-3.0-or-later`).
+See the [`LICENSE`](LICENSE) file for the full, official text as published by the
+Free Software Foundation.
+
+In short, the GPLv3 guarantees to every user the freedom to run, study, share,
+and modify this software — and requires that any distributed copy or
+derivative work:
+
+- **Preserves this copyright notice and license** in full, in every copy or
+  substantial portion of the source.
+- **Stays under GPL-3.0-or-later** (or a later GPL version) — it cannot be
+  relicensed under a more restrictive or proprietary license.
+- **States any changes made** to the original files, so authorship of
+  modifications is traceable and distinct from the original work.
+- **Makes the corresponding source code available** to anyone who receives a
+  compiled/binary distribution of the plugin.
+
+### Attribution
+
+Every source file carries a header identifying the project, its license, and
+its copyright holder. When redistributing this project or a derivative work:
+
+- Do not remove or alter the copyright header in existing source files.
+- Keep `Copyright (C) 2026 Lucas Henrique Novais de Araújo Petrola <petrolalucas@gmail.com>`
+  intact in every file that originates from this project, alongside any
+  additional copyright lines for your own contributions.
+- Credit **Inferna Core** and its original author in any public
+  announcement, fork, or redistribution (README, about box, release notes).
+
+This is a restatement of GPLv3's own terms for clarity, not an additional
+restriction beyond the license text in [`LICENSE`](LICENSE), which governs in
+case of any conflict.
 
 

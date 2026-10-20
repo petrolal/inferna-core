@@ -1,6 +1,6 @@
 /*
- * Inferna Visceral — Biopunk Theme, Splash Branding & Biometrics for IntelliJ IDEA
- * Copyright (C) 2026 Lucas Petrola <petrolalucas@gmail.com>
+ * Inferna Core - Biopunk JVM & Spring Developer Environment
+ * Copyright (C) 2026 Lucas Henrique Novais de Araújo Petrola <petrolalucas@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@ plugins {
 }
 
 group = "org.inferna"
-version = "1.0.0"
+version = "1.0.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
@@ -63,7 +63,10 @@ dependencies {
         if (localIdeDir != null) {
             local(localIdeDir)
         } else {
-            intellijIdeaUltimate(providers.gradleProperty("platformVersion"))
+            // Community is the lowest common denominator: the plugin must build and
+            // verify against it, then run unmodified on Ultimate (richer host, strict
+            // superset of Community's API surface).
+            intellijIdeaCommunity(providers.gradleProperty("platformVersion"))
         }
         bundledPlugin("com.intellij.java")
         bundledPlugin("org.jetbrains.kotlin")
@@ -82,18 +85,18 @@ kotlin {
 
 intellijPlatform {
     pluginConfiguration {
-        id.set("org.inferna.ide")
-        name.set("Inferna Visceral Theme & Biometrics")
+        id.set("org.inferna.core")
+        name.set("Inferna Core")
         version.set(project.version.toString())
         description.set(
             """
-            <p><strong>Inferna Visceral</strong> brings a focused, industrial biopunk aesthetic, splash branding, and real-time JVM &amp; Spring telemetry to <strong>IntelliJ IDEA Ultimate</strong>.</p>
+            <p><strong>Inferna Visceral</strong> brings a focused, industrial biopunk aesthetic, splash branding, and real-time JVM &amp; Spring telemetry to <strong>IntelliJ IDEA</strong> — both Community and Ultimate.</p>
             <h3>Features</h3>
             <ul>
               <li><strong>Inferna Visceral Dark UI Theme &amp; Editor Color Scheme:</strong> Deep obsidian surfaces (<code>#070203</code> / <code>#0a0405</code>) paired with high-contrast arterial crimson accents (<code>#b81424</code> / <code>#ff1e38</code>) tailored for IntelliJ's modern Islands UI, editor tabs, popups, and Block Terminal.</li>
               <li><strong>Automatic Splash Screen &amp; Icon Branding:</strong> Automatically synchronizes the Inferna Visceral splash screen and window icons while the Inferna theme is active, and cleanly restores the default IDE splash screen if you switch to another theme.</li>
               <li><strong>Inferna Biometrics Dashboard:</strong> Right-docked telemetry tool window tracking live JVM heap utilization, compilation status, and project-wide Spring bean counts (<code>@Component</code>, <code>@Service</code>, <code>@Repository</code>, <code>@Controller</code>, <code>@Configuration</code>, and <code>@Bean</code> declarations).</li>
-              <li><strong>Smart Spring Tooling Integration:</strong> Seamlessly defers to IntelliJ IDEA Ultimate's native Spring engine when active (preventing duplicate gutter icons or conflicting inspections), while providing polyglot UAST Spring gutter navigation, <code>@Value</code> property resolution, and bean ambiguity quick-fixes when running without Ultimate's Spring plugin.</li>
+              <li><strong>Smart Spring Tooling Integration:</strong> Seamlessly defers to IntelliJ IDEA Ultimate's native Spring engine when active (preventing duplicate gutter icons or conflicting inspections), while providing polyglot UAST Spring gutter navigation, <code>@Value</code> property resolution, and bean ambiguity quick-fixes on Community or whenever Ultimate's Spring plugin is absent.</li>
             </ul>
             """.trimIndent()
         )
@@ -101,7 +104,7 @@ intellijPlatform {
             """
             <h3>1.0.0</h3>
             <ul>
-              <li>Full compatibility with IntelliJ IDEA Ultimate (2025.1 – 2026.x+) and JetBrains Marketplace.</li>
+              <li>Full compatibility with IntelliJ IDEA Community and Ultimate (2025.3 – 2026.x+) and JetBrains Marketplace.</li>
               <li>Added automatic, reversible splash screen cache synchronization and window icon branding when the Inferna Visceral Dark theme is active.</li>
               <li>Preserved all built-in IDE themes and color schemes in Settings &rarr; Appearance.</li>
               <li>Automatic detection of IntelliJ IDEA Ultimate's native Spring plugin to prevent duplicate gutter markers and false-positive inspections.</li>
@@ -110,9 +113,9 @@ intellijPlatform {
             """.trimIndent()
         )
         vendor {
-            name.set("Lucas Petrola")
+            name.set("Lucas Henrique Novais de Araújo Petrola")
             email.set("petrolalucas@gmail.com")
-            url.set("https://github.com/inferna")
+            url.set("https://github.com/inferna/inferna-core")
         }
         ideaVersion {
             // Supports IntelliJ IDEA 2025.3+ and 2026.x+ (Ultimate & Community) with no upper cap.
@@ -199,7 +202,7 @@ tasks {
         dependsOn(syncResourceIcons)
         val splash1x = file("src/main/resources/artwork/inferna_splash.png")
         val splash2x = file("src/main/resources/artwork/inferna_splash@2x.png")
-        val splashJpeg = file("src/main/resources/artwork/inferna_ide_ce_splash_screen.jpeg")
+        val splashJpeg = file("src/main/resources/artwork/inferna_core_ce_splash_screen.jpeg")
         val pluginIconSvg = file("src/main/resources/META-INF/pluginIcon.svg")
         val pluginIcon16Svg = file("src/main/resources/icons/pluginIcon16.svg")
         val dashboardSvg = file("src/main/resources/icons/infernaDashboard.svg")
@@ -254,7 +257,7 @@ tasks {
                 addEntry("inferna_splash@2x.png", b2x)
                 addEntry("artwork/inferna_splash.png", b1x)
                 addEntry("artwork/inferna_splash@2x.png", b2x)
-                addEntry("artwork/inferna_ide_ce_splash_screen.jpeg", bJpeg)
+                addEntry("artwork/inferna_core_ce_splash_screen.jpeg", bJpeg)
                 addEntry("splash.png", b1x)
 
                 // Ultimate and Community SVG icons

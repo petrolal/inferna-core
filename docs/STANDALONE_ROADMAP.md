@@ -1,6 +1,6 @@
 <!--
-  ~ Inferna Visceral — Biopunk Theme, Splash Branding & Biometrics for IntelliJ IDEA
-  ~ Copyright (C) 2026 Lucas Petrola <petrolalucas@gmail.com>
+  ~ Inferna Core - Biopunk JVM & Spring Developer Environment
+  ~ Copyright (C) 2026 Lucas Henrique Novais de Araújo Petrola <petrolalucas@gmail.com>
   ~ SPDX-License-Identifier: GPL-3.0-or-later
   -->
 # Inferna IDE — Standalone Master Roadmap (Android Studio Model)
@@ -60,7 +60,7 @@ actual state of the code at commit `a56da3e`.
 
 ### 0.2 `plugin.xml`
 
-- `id=org.inferna.ide`, depends on `com.intellij.modules.platform`,
+- `id=org.inferna.core`, depends on `com.intellij.modules.platform`,
   `com.intellij.modules.java`, `org.jetbrains.kotlin`.
 - Registers: 1 `applicationListener` (`InfernaLifecycleListener` on
   `AppLifecycleListener`), 1 `themeProvider` (`targetUi="islands"` —

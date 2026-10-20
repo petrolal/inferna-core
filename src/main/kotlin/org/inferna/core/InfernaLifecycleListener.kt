@@ -1,6 +1,6 @@
 /*
- * Inferna Visceral — Biopunk Theme, Splash Branding & Biometrics for IntelliJ IDEA
- * Copyright (C) 2026 Lucas Petrola <petrolalucas@gmail.com>
+ * Inferna Core - Biopunk JVM & Spring Developer Environment
+ * Copyright (C) 2026 Lucas Henrique Novais de Araújo Petrola <petrolalucas@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,7 +47,7 @@ import kotlin.io.path.name
 
 private const val INFERNA_THEME_NAME = "Inferna Visceral Dark"
 private const val INFERNA_THEME_PROVIDER_ID = "org.inferna.theme.visceral"
-private const val FIRST_RUN_KEY = "org.inferna.ide.theme.initialized"
+private const val FIRST_RUN_KEY = "org.inferna.core.theme.initialized"
 private const val BRANDING_SETTING_ID = "org.inferna.branding.enabled"
 private const val SPLASH_1X_RESOURCE = "/artwork/inferna_splash.png"
 private const val SPLASH_2X_RESOURCE = "/artwork/inferna_splash@2x.png"
