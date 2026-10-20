@@ -24,7 +24,7 @@
 
 ---
 
-## 🌟 Overview
+## Overview
 
 **Inferna Core** is the free, open-core heart of the Inferna project for IntelliJ IDEA: a Marketplace-ready plugin that brings an industrial biopunk design language ("Inferna Visceral Dark"), automatic splash screen & window icon branding, and a real-time JVM & Spring Biometrics Dashboard to your IDE — on **Community Edition or Ultimate**, without sacrificing any of Ultimate's native capabilities.
 
@@ -32,7 +32,7 @@ This repository is 100% public under **GPL-3.0-or-later**: every feature listed 
 
 ---
 
-## ⚡ Key Features
+## Key Features
 
 - **Biopunk Design Language & "Inferna Visceral Dark" Theme**
   - Custom UI palette designed for deep focus and low eye-strain, featuring obsidian backgrounds (`#070203` / `#0a0405`), visceral crimson accents (`#b81424` / `#ff1e38`), and sharp syntax highlights across Java, Kotlin, and the Block Terminal.
@@ -55,7 +55,7 @@ This repository is 100% public under **GPL-3.0-or-later**: every feature listed 
 
 ---
 
-## 🚀 Installation in IntelliJ IDEA (Community or Ultimate)
+## Installation in IntelliJ IDEA (Community or Ultimate)
 
 ### From Disk (Pre-built Release Zip)
 
@@ -75,7 +75,7 @@ INTELLIJ_PUBLISH_TOKEN="<your-marketplace-token>" ./gradlew publishPlugin
 
 ---
 
-## 🛠️ Development & Verification
+## Development & Verification
 
 ### Prerequisites
 - **JDK 21** or later
@@ -96,7 +96,7 @@ INTELLIJ_PUBLISH_TOKEN="<your-marketplace-token>" ./gradlew publishPlugin
 
 ---
 
-## 📚 Documentation
+## Documentation
 
 - [`docs/FREEMIUM_ARCHITECTURE.md`](docs/FREEMIUM_ARCHITECTURE.md) — the open-core model: what ships free in this repository, the neutral `org.inferna.core.licensing` SPI, and where a commercial tier would live instead.
 - [`docs/STANDALONE_ROADMAP.md`](docs/STANDALONE_ROADMAP.md) — longer-horizon plan for a standalone "Inferna IDE" distribution built on `intellij-community`, Android Studio-style. Contains a historical audit section kept as a snapshot, not current state (see its staleness notice).
