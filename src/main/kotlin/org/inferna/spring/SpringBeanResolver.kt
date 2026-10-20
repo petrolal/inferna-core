@@ -125,22 +125,29 @@ object SpringBeanResolver {
 
     /**
      * Counts distinct Spring bean declarations across the project (stereotype-annotated
-     * classes plus `@Bean` factory methods) for the Inferna Biometrics Dashboard.
+     * classes plus `@Bean` factory methods) for the Inferna Biometrics Dashboard. Cached per
+     * project on [PsiModificationTracker.MODIFICATION_COUNT] — without this, the dashboard
+     * (refreshed on every compile event, and on every tool-window open) reran two full-project
+     * `AnnotatedElementsSearch` index scans even when nothing in the project had changed since
+     * the last count.
      */
     fun countProjectBeans(project: Project): Int {
-        val facade = JavaPsiFacade.getInstance(project)
-        val projectScope = GlobalSearchScope.projectScope(project)
-        val allScope = GlobalSearchScope.allScope(project)
-        val foundClasses = mutableSetOf<PsiClass>()
-        for (stereotype in STEREOTYPES) {
-            val annotationClass = facade.findClass(stereotype, allScope) ?: continue
-            foundClasses.addAll(AnnotatedElementsSearch.searchPsiClasses(annotationClass, projectScope).findAll())
+        return CachedValuesManager.getManager(project).getCachedValue(project) {
+            val facade = JavaPsiFacade.getInstance(project)
+            val projectScope = GlobalSearchScope.projectScope(project)
+            val allScope = GlobalSearchScope.allScope(project)
+            val foundClasses = mutableSetOf<PsiClass>()
+            for (stereotype in STEREOTYPES) {
+                val annotationClass = facade.findClass(stereotype, allScope) ?: continue
+                foundClasses.addAll(AnnotatedElementsSearch.searchPsiClasses(annotationClass, projectScope).findAll())
+            }
+            val beanMethods = mutableSetOf<PsiMethod>()
+            facade.findClass(BEAN, allScope)?.let { beanAnnotation ->
+                beanMethods.addAll(AnnotatedElementsSearch.searchPsiMethods(beanAnnotation, projectScope).findAll())
+            }
+            val count = foundClasses.size + beanMethods.size
+            CachedValueProvider.Result.create(count, PsiModificationTracker.MODIFICATION_COUNT)
         }
-        val beanMethods = mutableSetOf<PsiMethod>()
-        facade.findClass(BEAN, allScope)?.let { beanAnnotation ->
-            beanMethods.addAll(AnnotatedElementsSearch.searchPsiMethods(beanAnnotation, projectScope).findAll())
-        }
-        return foundClasses.size + beanMethods.size
     }
 
     private fun classQualifier(psiClass: PsiClass): String? {

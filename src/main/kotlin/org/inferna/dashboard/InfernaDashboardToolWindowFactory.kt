@@ -20,6 +20,7 @@
 
 package org.inferna.dashboard
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.compiler.CompilationStatusListener
@@ -106,12 +107,12 @@ class InfernaDashboardToolWindowFactory : ToolWindowFactory, DumbAware {
         val memoryTimer = Timer(MEMORY_REFRESH_MS) { memoryLabel.text = formatMemoryStats() }
         memoryTimer.start()
 
-        refreshSpringBeanStatsAsync(project, springBeansLabel)
+        refreshSpringBeanStatsAsync(project, content, springBeansLabel)
 
         val compilationListener = object : CompilationStatusListener {
             override fun compilationFinished(aborted: Boolean, errors: Int, warnings: Int, compileContext: CompileContext) {
                 compilationLabel.text = formatCompilationStats(aborted, errors, warnings)
-                refreshSpringBeanStatsAsync(project, springBeansLabel)
+                refreshSpringBeanStatsAsync(project, content, springBeansLabel)
             }
         }
         project.messageBus.connect(content).subscribe(CompilerTopics.COMPILATION_STATUS, compilationListener)
@@ -121,13 +122,13 @@ class InfernaDashboardToolWindowFactory : ToolWindowFactory, DumbAware {
         }
     }
 
-    private fun refreshSpringBeanStatsAsync(project: Project, label: JBLabel) {
+    private fun refreshSpringBeanStatsAsync(project: Project, content: Disposable, label: JBLabel) {
         if (project.isDisposed) return
         ReadAction.nonBlocking<Int> {
             SpringBeanResolver.countProjectBeans(project)
         }
             .inSmartMode(project)
-            .expireWith(project)
+            .expireWith(content)
             .finishOnUiThread(ModalityState.any()) { count ->
                 label.text = "Spring beans detected: $count"
             }

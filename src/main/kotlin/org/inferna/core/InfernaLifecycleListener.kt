@@ -63,6 +63,18 @@ private val FRAME_ICON_RESOURCES = listOf(
     "/icons/inferna_icon_512x512.png"
 )
 
+/**
+ * `appStarted()` (first-run theme activation, which itself triggers a synchronous
+ * [LafManagerListener] notification) and `lookAndFeelChanged()` can each schedule a splash-cache
+ * sync in quick succession, and the platform registers this class once per `<listener>` entry
+ * (two separate instances here, one per topic) — an instance-level field would not serialize
+ * between them. Routing every sync through this single shared, single-thread executor instead of
+ * the general [AppExecutorUtil] pool guarantees syncs run one at a time, in submission order, so
+ * concurrent writers never race on the same `.ij`/`.inferna-backup`/`.inferna-stamp` files.
+ */
+private val SPLASH_SYNC_EXECUTOR =
+    AppExecutorUtil.createBoundedApplicationPoolExecutor("Inferna Splash Branding Sync", 1)
+
 class InfernaLifecycleListener : AppLifecycleListener, LafManagerListener {
     private val logger = Logger.getInstance(InfernaLifecycleListener::class.java)
 
@@ -121,7 +133,7 @@ class InfernaLifecycleListener : AppLifecycleListener, LafManagerListener {
         if (active) {
             applyFrameIcons()
         }
-        AppExecutorUtil.getAppExecutorService().execute {
+        SPLASH_SYNC_EXECUTOR.execute {
             try {
                 syncSplashCache(active)
             } catch (e: Exception) {
