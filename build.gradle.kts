@@ -1,6 +1,6 @@
 /*
  * Inferna Core - Biopunk JVM & Spring Developer Environment
- * Copyright (C) 2026 Lucas Henrique Novais de Araújo Petrola <petrolalucas@gmail.com>
+ * Copyright (C) 2026 Lucas Henrique Novais de Araujo Petrola <petrolalucas@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,11 +27,11 @@ import java.util.zip.ZipOutputStream
 plugins {
     id("java")
     kotlin("jvm") version "2.2.20"
-    id("org.jetbrains.intellij.platform") version "2.2.1"
+    id("org.jetbrains.intellij.platform") version "2.19.0"
 }
 
 group = "org.inferna"
-version = "1.0.0-SNAPSHOT"
+version = "1.0.0-beta.1"
 
 repositories {
     mavenCentral()
@@ -63,10 +63,11 @@ dependencies {
         if (localIdeDir != null) {
             local(localIdeDir)
         } else {
-            // Community is the lowest common denominator: the plugin must build and
-            // verify against it, then run unmodified on Ultimate (richer host, strict
-            // superset of Community's API surface).
-            intellijIdeaCommunity(providers.gradleProperty("platformVersion"))
+            // Since 2025.3, JetBrains ships a single unified build (no more
+            // standalone Community artifact) - intellijIdea() resolves it, and
+            // the plugin still builds/verifies/runs unmodified on both former
+            // Community and Ultimate feature sets.
+            intellijIdea(providers.gradleProperty("platformVersion"))
         }
         bundledPlugin("com.intellij.java")
         bundledPlugin("org.jetbrains.kotlin")
@@ -113,7 +114,7 @@ intellijPlatform {
             """.trimIndent()
         )
         vendor {
-            name.set("Lucas Henrique Novais de Araújo Petrola")
+            name.set("Lucas Henrique Novais de Araujo Petrola")
             email.set("petrolalucas@gmail.com")
             url.set("https://github.com/petrolal/inferna-core")
         }
@@ -140,10 +141,17 @@ intellijPlatform {
         // JETBRAINS_MARKETPLACE_TOKEN and a hardcoded `channels = ["eap"]`), so the token this
         // build actually used never matched what the README documented.
         token.set(providers.environmentVariable("JETBRAINS_MARKETPLACE_TOKEN"))
-        // A version with a pre-release suffix (e.g. "1.0.0-SNAPSHOT") always goes to the "eap"
-        // channel; dropping the suffix for a real release (e.g. "1.0.0") routes it to the default
-        // (stable) channel automatically — no more hand-editing this block per release.
-        channels.set(listOf(if (project.version.toString().contains('-')) "eap" else "default"))
+        // The pre-release label names the channel: "1.0.0-beta.1" -> "beta", "1.0.0-eap.3" ->
+        // "eap", "1.0.0-rc.1" -> "rc". A plain "1.0.0" (no "-") goes to "default" (stable). No
+        // more hand-editing this block per release — bump the version, the channel follows.
+        channels.set(
+            listOf(
+                project.version.toString()
+                    .substringAfter('-', missingDelimiterValue = "default")
+                    .substringBefore('.')
+                    .lowercase()
+            )
+        )
     }
 }
 
