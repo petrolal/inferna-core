@@ -22,15 +22,11 @@
   <img src="https://img.shields.io/badge/Version-1.0.0--SNAPSHOT-crimson.svg" alt="Version 1.0.0-SNAPSHOT" />
 </p>
 
----
-
 ## Overview
 
 **Inferna Core** is the free, open-core heart of the Inferna project for IntelliJ IDEA: a Marketplace-ready plugin that brings an industrial biopunk design language ("Inferna Visceral Dark"), automatic splash screen & window icon branding, and a real-time JVM & Spring Biometrics Dashboard to your IDE — on **Community Edition or Ultimate**, without sacrificing any of Ultimate's native capabilities.
 
 This repository is 100% public under **GPL-3.0-or-later**: every feature listed below ships free and unlocked. It also defines a small, neutral licensing SPI (`org.inferna.core.licensing`) so that a separate, independently distributed commercial tier can plug in — see [`docs/FREEMIUM_ARCHITECTURE.md`](docs/FREEMIUM_ARCHITECTURE.md) for the exact boundary between what lives here and what doesn't.
-
----
 
 ## Key Features
 
@@ -53,8 +49,6 @@ This repository is 100% public under **GPL-3.0-or-later**: every feature listed 
   - Automatically detects **IntelliJ IDEA Ultimate's** native `com.intellij.spring` plugin and defers editor gutter icons, `@Value` references, and inspections to Ultimate's native engine—preventing duplicate gutter markers or false-positive warnings.
   - When used in environments without Ultimate's Spring plugin, provides polyglot UAST `@Autowired` / constructor bean gutter navigation, `@Value("${...}")` `.properties` resolution, and `@Qualifier` disambiguation quick-fixes.
 
----
-
 ## Installation in IntelliJ IDEA (Community or Ultimate)
 
 ### From Disk (Pre-built Release Zip)
@@ -72,8 +66,6 @@ This repository is 100% public under **GPL-3.0-or-later**: every feature listed 
 ```bash
 INTELLIJ_PUBLISH_TOKEN="<your-marketplace-token>" ./gradlew publishPlugin
 ```
-
----
 
 ## Development & Verification
 
@@ -94,15 +86,12 @@ INTELLIJ_PUBLISH_TOKEN="<your-marketplace-token>" ./gradlew publishPlugin
 ./gradlew runIde
 ```
 
----
-
 ## Documentation
 
 - [`docs/FREEMIUM_ARCHITECTURE.md`](docs/FREEMIUM_ARCHITECTURE.md) — the open-core model: what ships free in this repository, the neutral `org.inferna.core.licensing` SPI, and where a commercial tier would live instead.
 - [`docs/STANDALONE_ROADMAP.md`](docs/STANDALONE_ROADMAP.md) — longer-horizon plan for a standalone "Inferna IDE" distribution built on `intellij-community`, Android Studio-style. Contains a historical audit section kept as a snapshot, not current state (see its staleness notice).
 - [`docs/inferna_core_scaffolding_specification.md`](docs/inferna_core_scaffolding_specification.md) — the project's original scaffold, kept for reference only.
 
----
 
 ## 📄 License
 
