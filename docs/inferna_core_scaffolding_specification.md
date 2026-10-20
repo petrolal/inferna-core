@@ -5,6 +5,14 @@
   -->
 # Inferna IDE - Project Scaffolding Guide
 
+> **Historical snapshot, not current state.** This is the original scaffold
+> this repository (`inferna-core`) was bootstrapped from, kept verbatim for
+> reference. It predates the project rename, the Community+Ultimate dual
+> build target, and the `org.inferna.core.licensing` SPI — none of that is
+> reflected below. For the current architecture and package layout, see
+> `docs/FREEMIUM_ARCHITECTURE.md`; for the current build/`plugin.xml`, read
+> the actual `build.gradle.kts`/`src/main/resources/META-INF/plugin.xml`.
+
 This document contains the complete file tree and code for the **Inferna IDE** project, built atop the open-source **IntelliJ Platform SDK (Community Edition)** with Gradle Kotlin DSL, Java 21, and Kotlin 2.0.
 
 ---

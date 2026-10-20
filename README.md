@@ -3,22 +3,22 @@
   ~ Copyright (C) 2026 Lucas Henrique Novais de Araújo Petrola <petrolalucas@gmail.com>
   ~ SPDX-License-Identifier: GPL-3.0-or-later
   -->
-# Inferna Core
+<p align="center">
+  <img src="assets/icons/inferna.png" alt="Inferna Core logo" width="128" height="128" />
+</p>
+
+<h1 align="center">Inferna Core</h1>
 
 <p align="center">
-  <img src="assets/icons/inferna.png" alt="Inferna Logo" width="128" height="128" />
+  <strong>Biopunk Theme, Automatic Splash Branding &amp; JVM/Spring Biometrics for IntelliJ IDEA</strong><br />
+  <em>Free, open-core (GPL-3.0-or-later) plugin — Community &amp; Ultimate, 2025.3 – 2026.x+</em>
 </p>
 
 <p align="center">
-  <strong>Biopunk Theme, Automatic Splash Branding & JVM/Spring Biometrics Plugin</strong><br />
-  <em>Built for IntelliJ IDEA Ultimate & Community Edition (2025.1 – 2026.x+)</em>
-</p>
-
-<p align="center">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPLv3" /></a>
-  <img src="https://img.shields.io/badge/Java-21%2B-orange.svg" alt="Java 21+" />
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPLv3--or--later-blue.svg" alt="License: GPL-3.0-or-later" /></a>
+  <img src="https://img.shields.io/badge/IntelliJ%20IDEA-Community%20%26%20Ultimate-red.svg" alt="IntelliJ IDEA Community & Ultimate" />
   <img src="https://img.shields.io/badge/Kotlin-2.2.20-purple.svg" alt="Kotlin 2.2" />
-  <img src="https://img.shields.io/badge/IntelliJ%20IDEA-Ultimate%20%26%20Community-red.svg" alt="IntelliJ IDEA Ultimate & Community" />
+  <img src="https://img.shields.io/badge/Java-21%2B-orange.svg" alt="Java 21+" />
   <img src="https://img.shields.io/badge/Version-1.0.0--SNAPSHOT-crimson.svg" alt="Version 1.0.0-SNAPSHOT" />
 </p>
 
@@ -26,7 +26,9 @@
 
 ## 🌟 Overview
 
-**Inferna Visceral** is a Marketplace-ready plugin for **IntelliJ IDEA Ultimate** (and Community Edition) that brings an industrial biopunk design language, automatic splash screen & window icon branding, and a real-time JVM & Spring Biometrics Dashboard to your IDE—without sacrificing any of Ultimate's native capabilities.
+**Inferna Core** is the free, open-core heart of the Inferna project for IntelliJ IDEA: a Marketplace-ready plugin that brings an industrial biopunk design language ("Inferna Visceral Dark"), automatic splash screen & window icon branding, and a real-time JVM & Spring Biometrics Dashboard to your IDE — on **Community Edition or Ultimate**, without sacrificing any of Ultimate's native capabilities.
+
+This repository is 100% public under **GPL-3.0-or-later**: every feature listed below ships free and unlocked. It also defines a small, neutral licensing SPI (`org.inferna.core.licensing`) so that a separate, independently distributed commercial tier can plug in — see [`docs/FREEMIUM_ARCHITECTURE.md`](docs/FREEMIUM_ARCHITECTURE.md) for the exact boundary between what lives here and what doesn't.
 
 ---
 
@@ -39,7 +41,7 @@
 
 - **Automatic, Reversible Splash Screen & Window Icon Branding**
   - [`InfernaLifecycleListener`](src/main/kotlin/org/inferna/core/InfernaLifecycleListener.kt) automatically synchronizes IntelliJ's splash screen cache (`<systemPath>/splash/*.ij`) and window icons with the Inferna artwork whenever **Inferna Visceral Dark** is active.
-  - Switching to any other theme in **Settings → Appearance** cleanly restores the original IntelliJ IDEA Ultimate splash screen from backup.
+  - Switching to any other theme in **Settings → Appearance** cleanly restores the original IntelliJ IDEA splash screen from backup.
 
 - **Inferna Biometrics Dashboard**
   - Dedicated right-docked tool window ([`InfernaDashboardToolWindowFactory`](src/main/kotlin/org/inferna/dashboard/InfernaDashboardToolWindowFactory.kt)) providing live telemetry:
@@ -53,7 +55,7 @@
 
 ---
 
-## 🚀 Installation in IntelliJ IDEA Ultimate
+## 🚀 Installation in IntelliJ IDEA (Community or Ultimate)
 
 ### From Disk (Pre-built Release Zip)
 
@@ -61,7 +63,7 @@
    ```bash
    ./gradlew buildPlugin
    ```
-2. Open **IntelliJ IDEA Ultimate** → **Settings** (`Ctrl+Alt+S`) → **Plugins**.
+2. Open **IntelliJ IDEA** → **Settings** (`Ctrl+Alt+S`) → **Plugins**.
 3. Click the gear icon (**⚙️**) → **Install Plugin from Disk...**
 4. Select `build/distributions/inferna-core-1.0.0-SNAPSHOT.zip` and restart/apply if prompted.
 
@@ -91,6 +93,14 @@ INTELLIJ_PUBLISH_TOKEN="<your-marketplace-token>" ./gradlew publishPlugin
 # Launch a development sandbox IDE
 ./gradlew runIde
 ```
+
+---
+
+## 📚 Documentation
+
+- [`docs/FREEMIUM_ARCHITECTURE.md`](docs/FREEMIUM_ARCHITECTURE.md) — the open-core model: what ships free in this repository, the neutral `org.inferna.core.licensing` SPI, and where a commercial tier would live instead.
+- [`docs/STANDALONE_ROADMAP.md`](docs/STANDALONE_ROADMAP.md) — longer-horizon plan for a standalone "Inferna IDE" distribution built on `intellij-community`, Android Studio-style. Contains a historical audit section kept as a snapshot, not current state (see its staleness notice).
+- [`docs/inferna_core_scaffolding_specification.md`](docs/inferna_core_scaffolding_specification.md) — the project's original scaffold, kept for reference only.
 
 ---
 

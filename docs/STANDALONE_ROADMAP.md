@@ -9,7 +9,20 @@
 > current stage (a Gradle plugin run via `runIde` on top of a local IntelliJ
 > IDEA Community distribution) to a distributable standalone IDE — "Inferna
 > IDE" — following the same methodology Google applied to build Android Studio
-> on top of `intellij-community`.
+> on top of `intellij-community`. "Inferna IDE" here names that future
+> standalone product; the plugin repository itself is `inferna-core` (see
+> `docs/FREEMIUM_ARCHITECTURE.md`).
+
+> **Staleness notice:** §0 below audits commit `a56da3e` and is kept verbatim
+> as a historical snapshot — it is **not** a description of the current
+> `master`. Two concrete drifts since that audit, both already superseded:
+> `InfernaLifecycleListener.restrictToInfernaOnly()` (§0.3) no longer exists
+> in the current code, and the `org.intellij.scala`/`com.explyt.spring`/Docker
+> marketplace dependencies (§0.1, §1.2) are no longer declared in
+> `build.gradle.kts`. The project has also since added a neutral licensing
+> SPI (`org.inferna.core.licensing`, see `docs/FREEMIUM_ARCHITECTURE.md`)
+> that this roadmap predates and does not mention. Re-audit §0 before acting
+> on any Phase 2+ checklist below.
 
 ---
 
