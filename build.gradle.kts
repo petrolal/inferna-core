@@ -31,7 +31,7 @@ plugins {
 }
 
 group = "org.inferna"
-version = "1.1.2-eap"
+version = "2.0.0"
 
 repositories {
     mavenCentral()
