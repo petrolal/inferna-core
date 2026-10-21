@@ -26,15 +26,7 @@
     </dependencies>
 
     <extensions defaultExtensionNs="com.intellij">
-        <!-- Example: Detect non-statically compiled performance sinks -->
-        <!--
-        <localInspection language="Groovy"
-                         groupName="Inferna"
-                         shortName="InfernaDynamicGroovyInspection"
-                         enabledByDefault="true"
-                         level="WEAK WARNING"
-                         implementationClass="org.inferna.modules.groovy.CompileStaticInspection"
-                         displayName="Missing @CompileStatic on Critical Path"/>
-        -->
+        <applicationService serviceInterface="org.inferna.groovy.GroovyAnalyzerBridge"
+                             serviceImplementation="org.inferna.modules.groovy.GroovyAnalyzerBridgeImpl"/>
     </extensions>
 </idea-plugin>

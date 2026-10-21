@@ -25,6 +25,7 @@ import org.inferna.dashboard.actions.RefreshBiometricsAction
 import org.inferna.dashboard.actions.RescanSpringAction
 import org.inferna.dashboard.theme.BiopunkTheme
 import org.inferna.dashboard.ui.BiometricSectionRenderer
+import org.inferna.dashboard.ui.sections.GroovyBiometricsSection
 import org.inferna.dashboard.ui.sections.JvmBiologicalSection
 import org.inferna.dashboard.ui.sections.ProjectMatrixSection
 import org.inferna.dashboard.ui.sections.ScalaBiometricsSection
@@ -54,7 +55,8 @@ class InfernaDashboardToolWindowFactory : ToolWindowFactory, DumbAware {
         val sections: List<BiometricSectionRenderer> = listOf(
             JvmBiologicalSection(),
             ProjectMatrixSection(),
-            ScalaBiometricsSection()
+            ScalaBiometricsSection(),
+            GroovyBiometricsSection()
         )
 
         val dslPanel = panel {

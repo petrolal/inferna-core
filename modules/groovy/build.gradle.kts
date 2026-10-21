@@ -23,6 +23,11 @@ repositories {
 }
 
 dependencies {
+    // :modules:api carries GroovyAnalyzerBridge/DeepGroovyStats and depends on nothing in this
+    // project tree, mirroring :modules:scala's avoidance of a root -> this module -> root cycle
+    // through pluginModule(...) bundling.
+    compileOnly(project(":modules:api"))
+
     intellijPlatform {
         if (localIdeDir != null) {
             local(localIdeDir)
@@ -34,6 +39,10 @@ dependencies {
         // (its own optional <depends config-file>) for SRP: no Groovy-aware class is ever
         // classloaded on a run where Groovy support is disabled for the project.
         bundledPlugin("org.intellij.groovy")
+
+        // GrTypeDefinition et al. extend Java PSI supertypes (PsiClass, PsiMethod, ...); needed
+        // at compile time for the same reason :modules:scala depends on it.
+        bundledPlugin("com.intellij.java")
     }
 }
 
