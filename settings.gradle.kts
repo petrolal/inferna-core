@@ -20,6 +20,8 @@
 
 rootProject.name = "inferna-core"
 
+include(":modules:api", ":modules:scala", ":modules:groovy")
+
 pluginManagement {
     repositories {
         mavenCentral()

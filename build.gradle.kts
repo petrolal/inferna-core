@@ -31,51 +31,52 @@ plugins {
 }
 
 group = "org.inferna"
-version = "1.0.0-beta.1"
+version = "1.1.2-eap"
 
 repositories {
     mavenCentral()
     intellijPlatform {
         defaultRepositories()
-        // Required so the `instrumentCode` task can resolve the Java compiler
-        // used to instrument NotNull/Nullable annotations and form bindings.
         intellijDependencies()
     }
 }
 
-val localIdeDir = providers.gradleProperty("localPlatformPath").orNull?.let { file(it) }
-    ?: file("/run/current-system/sw/bin/intellij-idea-oss").takeIf { it.exists() }?.let { binary ->
-        binary.toPath().toRealPath().parent?.parent?.toFile()?.takeIf { dir ->
-            dir.resolve("product-info.json").exists()
-        }
-    }
-    ?: file(".intellijPlatform/localPlatformArtifacts").takeIf { it.isDirectory }?.let { artifactsDir ->
-        artifactsDir.listFiles { f -> f.name.startsWith("localIde-") && f.name.endsWith(".xml") }
-            ?.firstNotNullOfOrNull { xml ->
-                Regex("""artifact name="([^"]+)"""").find(xml.readText())?.groupValues?.get(1)?.let { relPath ->
-                    File("/", relPath).takeIf { dir -> dir.resolve("product-info.json").exists() }
-                }
-            }
-    }
+apply(from = "gradle/scripts/local-ide.gradle.kts")
+
+@Suppress("UNCHECKED_CAST")
+val localIdeDir = project.extra["localIdeDir"] as File?
 
 dependencies {
     intellijPlatform {
         if (localIdeDir != null) {
             local(localIdeDir)
         } else {
-            // Since 2025.3, JetBrains ships a single unified build (no more
-            // standalone Community artifact) - intellijIdea() resolves it, and
-            // the plugin still builds/verifies/runs unmodified on both former
-            // Community and Ultimate feature sets.
             intellijIdea(providers.gradleProperty("platformVersion"))
         }
+
+        // Bundled platform plugins
         bundledPlugin("com.intellij.java")
         bundledPlugin("org.jetbrains.kotlin")
         bundledPlugin("com.intellij.properties")
 
+        // Optional language-engine modules: each is an IntelliJ *content module* (see plugin.xml's
+        // <content><module name="..."/></content>), packaged as its own lib/modules/*.jar and
+        // activated by the platform only when its own optional <dependencies><plugin id="..."/></
+        // is satisfied. Each compiles against its own Marketplace/bundled plugin in isolation, so
+        // neither leaks onto this project's classpath — a missing Scala/Groovy plugin on the
+        // user's IDE can never throw ClassNotFoundException/NoClassDefFoundError from this module.
+        pluginModule(implementation(project(":modules:scala")))
+        pluginModule(implementation(project(":modules:groovy")))
+
         pluginVerifier()
         zipSigner()
     }
+
+    // Plain dependency, deliberately NOT wrapped in pluginModule(...): :modules:api carries the
+    // bridge interfaces/DTOs (e.g. ScalaAnalyzerBridge) that this project's own always-loaded
+    // dashboard code imports directly, so its classes must land on the main plugin jar's
+    // classpath — not in a lib/modules/*.jar content module nothing in plugin.xml ever activates.
+    implementation(project(":modules:api"))
 
     testImplementation(kotlin("test"))
 }
@@ -119,15 +120,11 @@ intellijPlatform {
             url.set("https://github.com/petrolal/inferna-core")
         }
         ideaVersion {
-            // Supports IntelliJ IDEA 2025.3+ and 2026.x+ (Ultimate & Community) with no upper cap.
             sinceBuild.set("253")
             untilBuild.set(provider { null })
         }
     }
 
-    // Marketplace requires a signed zip; both secrets are only read (never required) here, so a
-    // plain local `buildPlugin` still works with no secrets configured — only `signPlugin`/
-    // `publishPlugin` actually need them, and those only run in CI (.github/workflows/publish.yml).
     signing {
         certificateChain.set(providers.environmentVariable("CERTIFICATE_CHAIN"))
         privateKey.set(providers.environmentVariable("PRIVATE_KEY"))
@@ -135,15 +132,7 @@ intellijPlatform {
     }
 
     publishing {
-        // Must match the secret name .github/workflows/publish.yml actually injects — this was
-        // previously split across two conflicting `publishing {}` blocks (one here reading
-        // INTELLIJ_PUBLISH_TOKEN, a second misplaced inside `tasks {}` silently overriding it with
-        // JETBRAINS_MARKETPLACE_TOKEN and a hardcoded `channels = ["eap"]`), so the token this
-        // build actually used never matched what the README documented.
         token.set(providers.environmentVariable("JETBRAINS_MARKETPLACE_TOKEN"))
-        // The pre-release label names the channel: "1.0.0-beta.1" -> "beta", "1.0.0-eap.3" ->
-        // "eap", "1.0.0-rc.1" -> "rc". A plain "1.0.0" (no "-") goes to "default" (stable). No
-        // more hand-editing this block per release — bump the version, the channel follows.
         channels.set(
             listOf(
                 project.version.toString()
@@ -226,9 +215,6 @@ tasks {
         }
     }
 
-    // Optional resource-only branding archive (splash screens + SVG/PNG icons) safe for both
-    // IntelliJ IDEA Ultimate and Community Edition: does NOT override ApplicationInfo.xml, so
-    // Ultimate product codes (IU), licenses, and bundled Ultimate plugins remain untouched.
     val prepareBranding = register("prepareBranding") {
         dependsOn(syncResourceIcons)
         val splash1x = file("src/main/resources/artwork/inferna_splash.png")
@@ -262,7 +248,6 @@ tasks {
                 val bSvg16 = pluginIcon16Svg.readBytes()
                 val bDashSvg = dashboardSvg.readBytes()
 
-                // IntelliJ IDEA Ultimate splash image entries
                 addEntry("idea_logo.png", b1x)
                 addEntry("idea_logo@2x.png", b2x)
                 addEntry("idea_logo_simplified.png", b1x)
@@ -276,7 +261,6 @@ tasks {
                 addEntry("idea_logo_subscription_kotlin_15.png", b1x)
                 addEntry("idea_logo_subscription_kotlin_15@2x.png", b2x)
 
-                // IntelliJ IDEA Community splash image entries
                 addEntry("idea_community_logo.png", b1x)
                 addEntry("idea_community_logo@2x.png", b2x)
                 addEntry("idea_community_logo_java_30.png", b1x)
@@ -291,7 +275,6 @@ tasks {
                 addEntry("artwork/inferna_core_ce_splash_screen.jpeg", bJpeg)
                 addEntry("splash.png", b1x)
 
-                // Ultimate and Community SVG icons
                 addEntry("inferna.svg", bSvg)
                 addEntry("inferna_16.svg", bSvg16)
                 addEntry("idea.svg", bSvg)
@@ -340,4 +323,3 @@ tasks {
         }
     }
 }
-

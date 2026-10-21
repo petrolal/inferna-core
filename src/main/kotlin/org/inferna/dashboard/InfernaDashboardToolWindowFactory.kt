@@ -1,154 +1,141 @@
-/*
- * Inferna Core - Biopunk JVM & Spring Developer Environment
- * Copyright (C) 2026 Lucas Henrique Novais de Araujo Petrola <petrolalucas@gmail.com>
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- * SPDX-License-Identifier: GPL-3.0-or-later
- */
-
 package org.inferna.dashboard
 
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.application.ModalityState
-import com.intellij.openapi.application.ReadAction
+import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.ActionPlaces
+import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.actionSystem.Separator
 import com.intellij.openapi.compiler.CompilationStatusListener
 import com.intellij.openapi.compiler.CompileContext
 import com.intellij.openapi.compiler.CompilerTopics
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
-import com.intellij.ui.JBColor
-import com.intellij.ui.components.JBLabel
-import com.intellij.ui.components.JBPanel
+import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.content.ContentFactory
-import com.intellij.util.concurrency.AppExecutorUtil
+import com.intellij.ui.dsl.builder.panel
+import com.intellij.ui.dsl.gridLayout.UnscaledGaps
+import com.intellij.util.messages.Topic
+import com.intellij.util.ui.JBFont
+import com.intellij.util.ui.JBUI
+import org.inferna.dashboard.actions.PurgeMemoryAction
+import org.inferna.dashboard.actions.RefreshBiometricsAction
+import org.inferna.dashboard.actions.RescanSpringAction
+import org.inferna.dashboard.theme.BiopunkTheme
+import org.inferna.dashboard.ui.BiometricSectionRenderer
+import org.inferna.dashboard.ui.sections.GroovyBiometricsSection
+import org.inferna.dashboard.ui.sections.JvmBiologicalSection
+import org.inferna.dashboard.ui.sections.ProjectMatrixSection
+import org.inferna.dashboard.ui.sections.ScalaBiometricsSection
 import org.inferna.icons.InfernaIcons
-import org.inferna.spring.SpringBeanResolver
 import java.awt.BorderLayout
-import java.awt.Font
-import java.awt.GridLayout
 import javax.swing.BorderFactory
 import javax.swing.Icon
-import javax.swing.SwingConstants
+import javax.swing.JComponent
+import javax.swing.JPanel
+import javax.swing.ScrollPaneConstants
 import javax.swing.Timer
 
 class InfernaDashboardToolWindowFactory : ToolWindowFactory, DumbAware {
 
     companion object {
-        private val PANEL_BACKGROUND = JBColor(0xF5F0F0, 0x0A0405)
-        private val STATS_BACKGROUND = JBColor(0xEAE0E0, 0x140709)
-        private val STATS_BORDER = JBColor(0xD8C4C4, 0x2D0E12)
-        private val HEADER_FOREGROUND = JBColor(0xB8142E, 0xE6192E)
-        private val SUBSYSTEM_FOREGROUND = JBColor(0x961020, 0xB81424)
-        private val PROJECT_FOREGROUND = JBColor(0x221414, 0xE3D1D1)
-        private val SECONDARY_FOREGROUND = JBColor(0x6E5A5A, 0x7A6363)
         private const val MEMORY_REFRESH_MS = 2000
     }
 
-    override val icon: Icon
-        get() = InfernaIcons.Dashboard
+    override val icon: Icon get() = InfernaIcons.Dashboard
 
     override fun init(toolWindow: ToolWindow) {
         toolWindow.setIcon(InfernaIcons.Dashboard)
-        toolWindow.stripeTitle = "Inferna Dashboard"
+        toolWindow.stripeTitle = "Inferna Biometrics"
     }
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-        toolWindow.setIcon(InfernaIcons.Dashboard)
+        // Filtered once, up front: a section that isn't applicable (e.g. no Scala/Groovy
+        // sources) never renders, so nothing downstream has to special-case it.
+        val sections: List<BiometricSectionRenderer> = listOf(
+            JvmBiologicalSection(),
+            ProjectMatrixSection(),
+            ScalaBiometricsSection(),
+            GroovyBiometricsSection()
+        ).filter { it.isApplicable(project) }
 
-        val panel = JBPanel<JBPanel<*>>(BorderLayout()).apply {
-            background = PANEL_BACKGROUND
-            border = BorderFactory.createEmptyBorder(16, 16, 16, 16)
+        val dslPanel = panel {
+            customize(UnscaledGaps(8, 12, 8, 12))
+
+            row {
+                label(project.name.uppercase()).applyToComponent {
+                    font = JBFont.h3().asBold()
+                    foreground = BiopunkTheme.TEXT_PRIMARY
+                }
+            }
+
+            // Each section draws its own title embedded inside a horizontal rule via
+            // BiopunkTheme.biopunkGroup, so no manual separator() is needed between them.
+            sections.forEach { section -> section.render(this, project, toolWindow.disposable) }
         }
 
-        val headerLabel = JBLabel("INFERNA BIOMETRICS", InfernaIcons.Dashboard, SwingConstants.CENTER).apply {
-            foreground = HEADER_FOREGROUND
-            font = font.deriveFont(Font.BOLD, 14f)
-            iconTextGap = 8
-        }
+        val refreshAll = { sections.forEach { it.refresh(project) } }
 
-        val memoryLabel = JBLabel(formatMemoryStats()).apply { foreground = SECONDARY_FOREGROUND }
-        val compilationLabel = JBLabel("Compilation: not run yet").apply { foreground = SUBSYSTEM_FOREGROUND }
-        val springBeansLabel = JBLabel("Spring beans detected: scanning...").apply { foreground = SECONDARY_FOREGROUND }
-
-        val statsPanel = JBPanel<JBPanel<*>>(GridLayout(4, 1, 8, 8)).apply {
-            background = STATS_BACKGROUND
-            border = BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(STATS_BORDER),
-                BorderFactory.createEmptyBorder(10, 10, 10, 10)
-            )
-
-            add(JBLabel("Project: ${project.name}").apply { foreground = PROJECT_FOREGROUND })
-            add(compilationLabel)
-            add(memoryLabel)
-            add(springBeansLabel)
-        }
-
-        panel.add(headerLabel, BorderLayout.NORTH)
-        panel.add(statsPanel, BorderLayout.CENTER)
-
-        val contentFactory = ContentFactory.getInstance()
-        val content = contentFactory.createContent(panel, "Overview", false)
+        val mainComponent = buildLayout(dslPanel, refreshAll)
+        val content = ContentFactory.getInstance().createContent(mainComponent, null, false)
         toolWindow.contentManager.addContent(content)
 
-        val memoryTimer = Timer(MEMORY_REFRESH_MS) { memoryLabel.text = formatMemoryStats() }
-        memoryTimer.start()
+        // Initial scan
+        refreshAll()
 
-        refreshSpringBeanStatsAsync(project, content, springBeansLabel)
+        // Polling Timer
+        val timer = Timer(MEMORY_REFRESH_MS) { refreshAll() }
+        timer.start()
 
-        val compilationListener = object : CompilationStatusListener {
+        // Compilation Listener
+        val listener = object : CompilationStatusListener {
             override fun compilationFinished(aborted: Boolean, errors: Int, warnings: Int, compileContext: CompileContext) {
-                compilationLabel.text = formatCompilationStats(aborted, errors, warnings)
-                refreshSpringBeanStatsAsync(project, content, springBeansLabel)
+                refreshAll()
             }
         }
-        project.messageBus.connect(content).subscribe(CompilerTopics.COMPILATION_STATUS, compilationListener)
+        @Suppress("UNCHECKED_CAST")
+        val topic = CompilerTopics.COMPILATION_STATUS as Topic<CompilationStatusListener>
+        project.messageBus.connect(content).subscribe(topic, listener)
 
-        content.setDisposer {
-            memoryTimer.stop()
+        Disposer.register(content, Disposable { timer.stop() })
+    }
+
+    private fun buildLayout(content: JComponent, onRefreshAll: () -> Unit): JComponent {
+        val actionGroup = DefaultActionGroup().apply {
+            add(RefreshBiometricsAction(onRefreshAll))
+            add(Separator.create())
+            add(RescanSpringAction(onRefreshAll))
+            add(PurgeMemoryAction())
         }
-    }
 
-    private fun refreshSpringBeanStatsAsync(project: Project, content: Disposable, label: JBLabel) {
-        if (project.isDisposed) return
-        ReadAction.nonBlocking<Int> {
-            SpringBeanResolver.countProjectBeans(project)
+        val toolbar = ActionManager.getInstance().createActionToolbar(
+            ActionPlaces.TOOLWINDOW_CONTENT,
+            actionGroup,
+            true
+        ).apply {
+            targetComponent = content
+            component.border = BorderFactory.createEmptyBorder(4, 12, 4, 12)
+            component.isOpaque = false
         }
-            .inSmartMode(project)
-            .expireWith(content)
-            .finishOnUiThread(ModalityState.any()) { count ->
-                label.text = "Spring beans detected: $count"
-            }
-            .submit(AppExecutorUtil.getAppExecutorService())
-    }
 
-    private fun formatMemoryStats(): String {
-        val runtime = Runtime.getRuntime()
-        val totalMemoryMb = runtime.totalMemory() / (1024 * 1024)
-        val freeMemoryMb = runtime.freeMemory() / (1024 * 1024)
-        val usedMemoryMb = totalMemoryMb - freeMemoryMb
-        return "JVM Memory: ${usedMemoryMb}MB / ${totalMemoryMb}MB"
-    }
+        val scrollPane = JBScrollPane(
+            content,
+            ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+            ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
+        ).apply {
+            border = BorderFactory.createEmptyBorder(4, 12, 4, 12)
+            viewportBorder = null
+            isOpaque = false
+            viewport.isOpaque = false
+        }
 
-    private fun formatCompilationStats(aborted: Boolean, errors: Int, warnings: Int): String {
-        return when {
-            aborted -> "Compilation: aborted"
-            errors > 0 -> "Compilation: $errors error(s), $warnings warning(s)"
-            else -> "Compilation: clean ($warnings warning(s))"
+        return JPanel(BorderLayout()).apply {
+            border = JBUI.Borders.empty()
+            isOpaque = false
+            add(toolbar.component, BorderLayout.NORTH)
+            add(scrollPane, BorderLayout.CENTER)
         }
     }
 }
-
