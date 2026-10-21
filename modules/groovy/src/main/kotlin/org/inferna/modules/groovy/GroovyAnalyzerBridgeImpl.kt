@@ -45,6 +45,7 @@ class GroovyAnalyzerBridgeImpl : GroovyAnalyzerBridge {
         var traits = 0
         var closures = 0
         var compileStaticMembers = 0
+        var compileStaticEligible = 0
 
         for (virtualFile in groovyFiles) {
             val psiFile = psiManager.findFile(virtualFile) ?: continue
@@ -54,17 +55,21 @@ class GroovyAnalyzerBridgeImpl : GroovyAnalyzerBridge {
                         is GrTypeDefinition -> {
                             typeDefinitions++
                             if (element.isTrait) traits++
+                            compileStaticEligible++
                             if (element.hasCompileStatic()) compileStaticMembers++
                         }
                         is GrClosableBlock -> closures++
-                        is GrMethod -> if (element.hasCompileStatic()) compileStaticMembers++
+                        is GrMethod -> {
+                            compileStaticEligible++
+                            if (element.hasCompileStatic()) compileStaticMembers++
+                        }
                     }
                     super.visitElement(element)
                 }
             })
         }
 
-        return DeepGroovyStats(typeDefinitions, traits, closures, compileStaticMembers)
+        return DeepGroovyStats(typeDefinitions, traits, closures, compileStaticMembers, compileStaticEligible)
     }
 
     private fun PsiModifierListOwner.hasCompileStatic(): Boolean =

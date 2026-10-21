@@ -25,6 +25,8 @@ import com.intellij.openapi.project.Project
 import com.intellij.ui.dsl.builder.Panel
 
 interface BiometricSectionRenderer {
+    /** Whether this section has anything to show for [project]; false means [render] is never called. */
+    fun isApplicable(project: Project): Boolean = true
     fun render(panel: Panel, project: Project, parentDisposable: Disposable)
     fun refresh(project: Project)
 }

@@ -25,7 +25,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.ui.dsl.builder.Panel
 import org.inferna.dashboard.telemetry.JvmBiologicalProvider
 import org.inferna.dashboard.theme.BiopunkTheme
-import org.inferna.dashboard.theme.BiopunkTheme.biopunkHeader
+import org.inferna.dashboard.theme.BiopunkTheme.biopunkGroup
 import org.inferna.dashboard.ui.BiometricSectionRenderer
 import javax.swing.JLabel
 
@@ -38,18 +38,19 @@ class JvmBiologicalSection(
 
     override fun render(panel: Panel, project: Project, parentDisposable: Disposable) {
         panel.apply {
-            biopunkHeader("JVM BIOLOGICAL STATE")
-            row("Heap:") {
-                heapLabel = label("Monitoring...")
-                    .applyToComponent {
-                        font = BiopunkTheme.FONT_MONO_REGULAR
-                        foreground = BiopunkTheme.ACCENT_CRIMSON
-                    }.component
-            }
-            row("Circulation:") {
-                circulationLabel = label("Scanning threads...")
-                    .applyToComponent { foreground = BiopunkTheme.TEXT_SECONDARY }
-                    .component
+            biopunkGroup("JVM BIOLOGICAL STATE") {
+                row("Heap:") {
+                    heapLabel = label("Monitoring...")
+                        .applyToComponent {
+                            font = BiopunkTheme.FONT_MONO_REGULAR
+                            foreground = BiopunkTheme.ACCENT_CRIMSON
+                        }.component
+                }
+                row("Circulation:") {
+                    circulationLabel = label("Scanning threads...")
+                        .applyToComponent { foreground = BiopunkTheme.TEXT_SECONDARY }
+                        .component
+                }
             }
         }
     }

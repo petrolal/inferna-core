@@ -21,7 +21,9 @@
 package org.inferna.dashboard.theme
 
 import com.intellij.ui.JBColor
+import com.intellij.ui.components.JBLabel
 import com.intellij.ui.dsl.builder.Panel
+import com.intellij.ui.dsl.builder.Row
 import com.intellij.util.ui.JBFont
 import com.intellij.util.ui.JBUI
 import java.awt.Font
@@ -43,12 +45,16 @@ object BiopunkTheme {
         return "█".repeat(filled) + "░".repeat(empty)
     }
 
-    fun Panel.biopunkHeader(title: String) {
-        row {
-            label(title).applyToComponent {
-                font = JBFont.small().asBold()
-                foreground = SECTION_HEADER
-            }
+    /**
+     * A section title embedded directly inside its own horizontal rule — the platform's
+     * native titled-group pattern (same as IntelliJ Settings pages) — instead of a plain
+     * label row sitting above a separate full-width separator line.
+     */
+    fun Panel.biopunkGroup(title: String, init: Panel.() -> Unit): Row {
+        val titleLabel = JBLabel(title).apply {
+            font = JBFont.small().asBold()
+            foreground = SECTION_HEADER
         }
+        return group(titleLabel, false, init)
     }
 }

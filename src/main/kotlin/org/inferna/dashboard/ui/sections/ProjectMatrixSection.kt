@@ -30,7 +30,7 @@ import com.intellij.util.ui.JBUI
 import org.inferna.dashboard.telemetry.ProjectMatrixProvider
 import org.inferna.dashboard.telemetry.ProjectMatrixStats
 import org.inferna.dashboard.theme.BiopunkTheme
-import org.inferna.dashboard.theme.BiopunkTheme.biopunkHeader
+import org.inferna.dashboard.theme.BiopunkTheme.biopunkGroup
 import org.inferna.dashboard.ui.BiometricSectionRenderer
 import java.awt.Dimension
 import javax.swing.JLabel
@@ -46,28 +46,29 @@ class ProjectMatrixSection(
     private lateinit var matrixLabel: JLabel
     private lateinit var overheadLabel: JLabel
 
-    override fun render(panel: Panel, project: Project, parentDisposable: Disposable) {
-        if (!provider.isApplicable(project)) return
+    override fun isApplicable(project: Project): Boolean = provider.isApplicable(project)
 
+    override fun render(panel: Panel, project: Project, parentDisposable: Disposable) {
         panel.apply {
-            biopunkHeader("POLYGONAL MATRIX")
-            row {
-                label("Sources:").applyToComponent {
-                    preferredSize = Dimension(JBUI.scale(LABEL_WIDTH_DP), preferredSize.height)
+            biopunkGroup("POLYGONAL MATRIX") {
+                row {
+                    label("Sources:").applyToComponent {
+                        preferredSize = Dimension(JBUI.scale(LABEL_WIDTH_DP), preferredSize.height)
+                    }
+                    matrixLabel = label("Scanning workspace...")
+                        .applyToComponent {
+                            font = BiopunkTheme.FONT_MONO_REGULAR
+                            foreground = BiopunkTheme.TEXT_PRIMARY
+                        }.component
                 }
-                matrixLabel = label("Scanning workspace...")
-                    .applyToComponent {
-                        font = BiopunkTheme.FONT_MONO_REGULAR
-                        foreground = BiopunkTheme.TEXT_PRIMARY
-                    }.component
-            }
-            row {
-                label("Pipeline:").applyToComponent {
-                    preferredSize = Dimension(JBUI.scale(LABEL_WIDTH_DP), preferredSize.height)
+                row {
+                    label("Pipeline:").applyToComponent {
+                        preferredSize = Dimension(JBUI.scale(LABEL_WIDTH_DP), preferredSize.height)
+                    }
+                    overheadLabel = label("Analyzing build path...")
+                        .applyToComponent { foreground = BiopunkTheme.TEXT_MUTED }
+                        .component
                 }
-                overheadLabel = label("Analyzing build path...")
-                    .applyToComponent { foreground = BiopunkTheme.TEXT_MUTED }
-                    .component
             }
         }
     }

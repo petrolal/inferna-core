@@ -52,12 +52,14 @@ class InfernaDashboardToolWindowFactory : ToolWindowFactory, DumbAware {
     }
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
+        // Filtered once, up front: a section that isn't applicable (e.g. no Scala/Groovy
+        // sources) never renders, so nothing downstream has to special-case it.
         val sections: List<BiometricSectionRenderer> = listOf(
             JvmBiologicalSection(),
             ProjectMatrixSection(),
             ScalaBiometricsSection(),
             GroovyBiometricsSection()
-        )
+        ).filter { it.isApplicable(project) }
 
         val dslPanel = panel {
             customize(UnscaledGaps(8, 12, 8, 12))
@@ -68,12 +70,10 @@ class InfernaDashboardToolWindowFactory : ToolWindowFactory, DumbAware {
                     foreground = BiopunkTheme.TEXT_PRIMARY
                 }
             }
-            separator()
 
-            sections.forEach { section ->
-                section.render(this, project, toolWindow.disposable)
-                separator()
-            }
+            // Each section draws its own title embedded inside a horizontal rule via
+            // BiopunkTheme.biopunkGroup, so no manual separator() is needed between them.
+            sections.forEach { section -> section.render(this, project, toolWindow.disposable) }
         }
 
         val refreshAll = { sections.forEach { it.refresh(project) } }

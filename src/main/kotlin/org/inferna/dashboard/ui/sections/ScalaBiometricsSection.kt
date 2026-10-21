@@ -31,7 +31,7 @@ import com.intellij.util.ui.JBUI
 import org.inferna.dashboard.telemetry.ScalaTelemetryProvider
 import org.inferna.dashboard.telemetry.ScalaTelemetryStats
 import org.inferna.dashboard.theme.BiopunkTheme
-import org.inferna.dashboard.theme.BiopunkTheme.biopunkHeader
+import org.inferna.dashboard.theme.BiopunkTheme.biopunkGroup
 import org.inferna.dashboard.ui.BiometricSectionRenderer
 import org.inferna.scala.DeepScalaStats
 import org.inferna.scala.ScalaAnalyzerBridge
@@ -56,36 +56,37 @@ class ScalaBiometricsSection(
     private lateinit var pipelineLabel: JLabel
     private lateinit var astLabel: JLabel
 
-    override fun render(panel: Panel, project: Project, parentDisposable: Disposable) {
-        if (!provider.isApplicable(project)) return
+    override fun isApplicable(project: Project): Boolean = provider.isApplicable(project)
 
+    override fun render(panel: Panel, project: Project, parentDisposable: Disposable) {
         panel.apply {
-            biopunkHeader("SCALA SYNAPTIC ENGINE")
-            row {
-                label("Runtime:").applyToComponent {
-                    preferredSize = Dimension(JBUI.scale(LABEL_WIDTH_DP), preferredSize.height)
+            biopunkGroup("SCALA SYNAPTIC ENGINE") {
+                row {
+                    label("Runtime:").applyToComponent {
+                        preferredSize = Dimension(JBUI.scale(LABEL_WIDTH_DP), preferredSize.height)
+                    }
+                    versionLabel = label("Detecting Scala SDK...")
+                        .applyToComponent {
+                            font = BiopunkTheme.FONT_MONO_REGULAR
+                            foreground = BiopunkTheme.ACCENT_CRIMSON
+                        }.component
                 }
-                versionLabel = label("Detecting Scala SDK...")
-                    .applyToComponent {
-                        font = BiopunkTheme.FONT_MONO_REGULAR
-                        foreground = BiopunkTheme.ACCENT_CRIMSON
-                    }.component
-            }
-            row {
-                label("Bridge:").applyToComponent {
-                    preferredSize = Dimension(JBUI.scale(LABEL_WIDTH_DP), preferredSize.height)
+                row {
+                    label("Bridge:").applyToComponent {
+                        preferredSize = Dimension(JBUI.scale(LABEL_WIDTH_DP), preferredSize.height)
+                    }
+                    pipelineLabel = label("Detecting bridge...")
+                        .applyToComponent { foreground = BiopunkTheme.TEXT_MUTED }
+                        .component
                 }
-                pipelineLabel = label("Detecting bridge...")
-                    .applyToComponent { foreground = BiopunkTheme.TEXT_MUTED }
-                    .component
-            }
-            row {
-                label("Deep AST:").applyToComponent {
-                    preferredSize = Dimension(JBUI.scale(LABEL_WIDTH_DP), preferredSize.height)
+                row {
+                    label("Deep AST:").applyToComponent {
+                        preferredSize = Dimension(JBUI.scale(LABEL_WIDTH_DP), preferredSize.height)
+                    }
+                    astLabel = label("Scala plugin not active")
+                        .applyToComponent { foreground = BiopunkTheme.TEXT_MUTED }
+                        .component
                 }
-                astLabel = label("Scala plugin not active")
-                    .applyToComponent { foreground = BiopunkTheme.TEXT_MUTED }
-                    .component
             }
         }
     }

@@ -48,6 +48,25 @@
                     factoryClass="org.inferna.dashboard.InfernaDashboardToolWindowFactory"
                     anchor="right"
                     secondary="false"/>
+
+        <!-- Spring tooling: each self-disables at runtime (SpringBeanResolver.isNativeSpringPluginActive)
+             whenever IntelliJ IDEA Ultimate's bundled com.intellij.spring plugin is installed and
+             enabled, so Community gets gutter navigation/inspections and Ultimate never sees
+             duplicate markers. No separate content module needed: this code only depends on UAST
+             and generic PSI, never on com.intellij.spring classes. -->
+        <codeInsight.lineMarkerProvider language="JAVA"
+                                         implementationClass="org.inferna.spring.SpringBeanLineMarkerProvider"/>
+        <codeInsight.lineMarkerProvider language="kotlin"
+                                         implementationClass="org.inferna.spring.SpringBeanLineMarkerProvider"/>
+
+        <localInspection groupName="Inferna Spring"
+                          shortName="InfernaUnresolvedSpringBean"
+                          enabledByDefault="true"
+                          level="WARNING"
+                          implementationClass="org.inferna.spring.UnresolvedSpringBeanInspection"
+                          displayName="Unresolved or ambiguous Spring bean injection"/>
+
+        <psi.referenceContributor implementation="org.inferna.spring.SpringValueReferenceContributor"/>
     </extensions>
 
     <extensions defaultExtensionNs="org.inferna.core">

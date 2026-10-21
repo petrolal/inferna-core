@@ -24,11 +24,13 @@ import com.intellij.facet.FacetManager
 import com.intellij.openapi.fileTypes.FileTypeManager
 import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.roots.OrderEnumerator
 import com.intellij.psi.search.FileTypeIndex
 import com.intellij.psi.search.ProjectScope
 
 data class GroovyTelemetryStats(
-    val fileCount: Int
+    val fileCount: Int,
+    val runtimeVersion: String?
 )
 
 class GroovyTelemetryProvider : BiometricProvider<GroovyTelemetryStats> {
@@ -52,6 +54,22 @@ class GroovyTelemetryProvider : BiometricProvider<GroovyTelemetryStats> {
         val scope = ProjectScope.getContentScope(project)
         val groovyType = FileTypeManager.getInstance().getFileTypeByExtension("groovy")
         val groovyFiles = FileTypeIndex.getFiles(groovyType, scope).size
-        return GroovyTelemetryStats(fileCount = groovyFiles)
+
+        var detectedVersion: String? = null
+        OrderEnumerator.orderEntries(project).librariesOnly().forEachLibrary { lib ->
+            val name = lib.name ?: ""
+            if (name.contains("groovy", ignoreCase = true)) {
+                extractVersion(name)?.let { detectedVersion = it }
+                if (detectedVersion != null) return@forEachLibrary false
+            }
+            true
+        }
+
+        return GroovyTelemetryStats(fileCount = groovyFiles, runtimeVersion = detectedVersion)
+    }
+
+    private fun extractVersion(libName: String): String? {
+        val regex = Regex("""(?i)groovy(?:-all)?[_-]([0-9]+\.[0-9]+(?:\.[0-9]+)?)""")
+        return regex.find(libName)?.groupValues?.get(1)
     }
 }

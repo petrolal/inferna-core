@@ -26,7 +26,8 @@ data class DeepGroovyStats(
     val typeDefinitions: Int,
     val traits: Int,
     val closures: Int,
-    val compileStaticMembers: Int
+    val compileStaticMembers: Int,
+    val compileStaticEligible: Int
 )
 
 interface GroovyAnalyzerBridge {
