@@ -78,7 +78,9 @@ object InfernaBrandingManager {
         // Don't consume FIRST_RUN_KEY until the theme is actually found/applied: the
         // provider may not be registered yet on this call (startup ordering), and marking
         // the flag early would permanently skip activation with no retry on next launch.
-        val infernaLaf = lafManager.findLaf(THEME_PROVIDER_ID) ?: return
+        // Uses the public installedThemes sequence rather than LafManager.findLaf(String),
+        // which is @ApiStatus.Internal and flagged by the Plugin Verifier.
+        val infernaLaf = lafManager.installedThemes.firstOrNull { it.id == THEME_PROVIDER_ID } ?: return
         if (lafManager.currentUIThemeLookAndFeel?.id != THEME_PROVIDER_ID) {
             lafManager.setCurrentLookAndFeel(infernaLaf, true)
             lafManager.updateUI()

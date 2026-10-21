@@ -67,8 +67,11 @@ object SpringBeanResolver {
      * aside and avoid duplicating Ultimate's native Spring tooling.
      */
     fun isNativeSpringPluginActive(): Boolean {
-        val pluginId = PluginId.getId(NATIVE_SPRING_PLUGIN_ID)
-        return PluginManagerCore.getPlugin(pluginId) != null && !PluginManagerCore.isDisabled(pluginId)
+        // isLoaded == installed AND enabled, which is exactly "installed and enabled" without
+        // the two-call getPlugin()+isDisabled() combination — PluginManagerCore.getPlugin is
+        // @ApiStatus.Internal as of 2025.3.6+ and flagged by the Plugin Verifier, and the public
+        // PluginManager.getPlugin facade is itself deprecated.
+        return PluginManagerCore.isLoaded(PluginId.getId(NATIVE_SPRING_PLUGIN_ID))
     }
 
     fun hasStereotype(psiClass: PsiClass): Boolean = STEREOTYPES.any { psiClass.hasAnnotation(it) }
