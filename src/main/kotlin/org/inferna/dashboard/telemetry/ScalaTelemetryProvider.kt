@@ -26,7 +26,6 @@ import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.OrderEnumerator
 import com.intellij.psi.search.FileTypeIndex
-import com.intellij.psi.search.FilenameIndex
 import com.intellij.psi.search.ProjectScope
 
 data class ScalaTelemetryStats(
@@ -40,7 +39,10 @@ class ScalaTelemetryProvider : BiometricProvider<ScalaTelemetryStats> {
 
     override fun isApplicable(project: Project): Boolean {
         val scope = ProjectScope.getContentScope(project)
-        val hasFiles = FilenameIndex.getAllFilesByExt(project, "scala", scope).isNotEmpty()
+        // FilenameIndex.getAllFilesByExt() misses files here; FileTypeIndex (used in scan() below
+        // too) is the one that actually reflects the project's real file-type index.
+        val scalaType = FileTypeManager.getInstance().getFileTypeByExtension("scala")
+        val hasFiles = FileTypeIndex.getFiles(scalaType, scope).isNotEmpty()
         if (hasFiles) return true
 
         return ModuleManager.getInstance(project).modules.any { module ->

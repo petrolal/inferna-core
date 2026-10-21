@@ -19,17 +19,14 @@
   -->
 
 <idea-plugin>
-    <!-- Extensions active only in environments with Groovy enabled -->
+    <!-- Content-module descriptor (see root plugin.xml's <content><module name="inferna-core.modules.scala"/></content>).
+         Only activated by the platform when org.intellij.scala is actually present/enabled. -->
+    <dependencies>
+        <plugin id="org.intellij.scala"/>
+    </dependencies>
+
     <extensions defaultExtensionNs="com.intellij">
-        <!-- Example: Detect non-statically compiled performance sinks -->
-        <!--
-        <localInspection language="Groovy"
-                         groupName="Inferna"
-                         shortName="InfernaDynamicGroovyInspection"
-                         enabledByDefault="true"
-                         level="WEAK WARNING"
-                         implementationClass="org.inferna.groovy.CompileStaticInspection"
-                         displayName="Missing @CompileStatic on Critical Path"/>
-        -->
+        <applicationService serviceInterface="org.inferna.scala.ScalaAnalyzerBridge"
+                             serviceImplementation="org.inferna.modules.scala.ScalaAnalyzerBridgeImpl"/>
     </extensions>
 </idea-plugin>

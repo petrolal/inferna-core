@@ -21,6 +21,7 @@
 package org.inferna.dashboard.ui.sections
 
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.project.Project
@@ -32,9 +33,17 @@ import org.inferna.dashboard.telemetry.ScalaTelemetryStats
 import org.inferna.dashboard.theme.BiopunkTheme
 import org.inferna.dashboard.theme.BiopunkTheme.biopunkHeader
 import org.inferna.dashboard.ui.BiometricSectionRenderer
+import org.inferna.scala.DeepScalaStats
+import org.inferna.scala.ScalaAnalyzerBridge
 import java.awt.Dimension
 import javax.swing.JLabel
 
+/**
+ * Queries [ScalaAnalyzerBridge] purely via [ApplicationManager.getApplication].getService — never
+ * imports anything from `org.jetbrains.plugins.scala`. The service is null whenever
+ * `:modules:scala`'s optional descriptor hasn't been loaded (Scala plugin absent/disabled),
+ * so this section degrades to the heuristic [ScalaTelemetryProvider] stats with no crash.
+ */
 class ScalaBiometricsSection(
     private val provider: ScalaTelemetryProvider = ScalaTelemetryProvider()
 ) : BiometricSectionRenderer {
@@ -45,6 +54,7 @@ class ScalaBiometricsSection(
 
     private lateinit var versionLabel: JLabel
     private lateinit var pipelineLabel: JLabel
+    private lateinit var astLabel: JLabel
 
     override fun render(panel: Panel, project: Project, parentDisposable: Disposable) {
         if (!provider.isApplicable(project)) return
@@ -69,22 +79,34 @@ class ScalaBiometricsSection(
                     .applyToComponent { foreground = BiopunkTheme.TEXT_MUTED }
                     .component
             }
+            row {
+                label("Deep AST:").applyToComponent {
+                    preferredSize = Dimension(JBUI.scale(LABEL_WIDTH_DP), preferredSize.height)
+                }
+                astLabel = label("Scala plugin not active")
+                    .applyToComponent { foreground = BiopunkTheme.TEXT_MUTED }
+                    .component
+            }
         }
     }
 
     override fun refresh(project: Project) {
         if (!::versionLabel.isInitialized || project.isDisposed) return
 
-        ReadAction.nonBlocking<ScalaTelemetryStats> {
-            provider.scan(project)
+        ReadAction.nonBlocking<Pair<ScalaTelemetryStats, DeepScalaStats?>> {
+            val bridge = ApplicationManager.getApplication().getService(ScalaAnalyzerBridge::class.java)
+            provider.scan(project) to bridge?.inspectProject(project)
         }
             .inSmartMode(project)
             .expireWith(project)
-            .finishOnUiThread(ModalityState.any()) { stats ->
+            .finishOnUiThread(ModalityState.any()) { (stats, deep) ->
                 val versionTag = stats.runtimeVersion ?: "Unknown"
                 val dialectTag = if (stats.isScala3) "Scala 3 (Dotty)" else "Scala 2"
                 versionLabel.text = "$dialectTag [$versionTag] — ${stats.fileCount} sources"
                 pipelineLabel.text = stats.compilerPipeline
+                astLabel.text = deep?.let {
+                    "objects=${it.objectSingletons} case=${it.caseClasses} implicit/given=${it.implicitOrGivenDefs}"
+                } ?: "Scala plugin not active"
             }
             .submit(AppExecutorUtil.getAppExecutorService())
     }

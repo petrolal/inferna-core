@@ -72,17 +72,20 @@ object InfernaBrandingManager {
 
     fun initializeThemeIfNeeded() {
         val props = PropertiesComponent.getInstance()
+        if (props.getBoolean(FIRST_RUN_KEY, false)) return
+
         val lafManager = LafManager.getInstance()
-        if (!props.getBoolean(FIRST_RUN_KEY, false)) {
-            props.setValue(FIRST_RUN_KEY, true)
-            val infernaLaf = lafManager.findLaf(THEME_PROVIDER_ID)
-            if (infernaLaf != null && lafManager.currentUIThemeLookAndFeel?.id != THEME_PROVIDER_ID) {
-                lafManager.setCurrentLookAndFeel(infernaLaf, true)
-                lafManager.updateUI()
-                logger.info("Activated Inferna Visceral Dark theme on initial setup.")
-            }
-            syncEditorColorScheme()
+        // Don't consume FIRST_RUN_KEY until the theme is actually found/applied: the
+        // provider may not be registered yet on this call (startup ordering), and marking
+        // the flag early would permanently skip activation with no retry on next launch.
+        val infernaLaf = lafManager.findLaf(THEME_PROVIDER_ID) ?: return
+        if (lafManager.currentUIThemeLookAndFeel?.id != THEME_PROVIDER_ID) {
+            lafManager.setCurrentLookAndFeel(infernaLaf, true)
+            lafManager.updateUI()
+            logger.info("Activated Inferna Visceral Dark theme on initial setup.")
         }
+        syncEditorColorScheme()
+        props.setValue(FIRST_RUN_KEY, true)
     }
 
     fun syncEditorColorScheme() {

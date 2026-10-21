@@ -8,15 +8,31 @@
     <depends>com.intellij.modules.java</depends>
     <depends>org.jetbrains.kotlin</depends>
 
-    <!-- Optional Polyglot Module Descriptors -->
-    <depends optional="true" config-file="inferna-groovy.xml">org.intellij.groovy</depends>
+    <!-- Optional Polyglot Content Modules: each descriptor below (modules/scala, modules/groovy)
+         lives in its own lib/modules/*.jar and is activated by the platform only when its own
+         <dependencies><plugin id="..."/></dependencies> is satisfied — never classloaded otherwise. -->
+    <content>
+        <module name="inferna-core.modules.scala"/>
+        <module name="inferna-core.modules.groovy"/>
+    </content>
 
     <applicationListeners>
         <listener class="org.inferna.core.InfernaLifecycleListener"
                   topic="com.intellij.ide.ui.LafManagerListener"/>
     </applicationListeners>
 
+    <extensionPoints>
+        <!-- Freemium SPI: a separately distributed inferna-pro plugin registers its own
+             implementation here with order="first" to outrank DefaultInfernaLicenseProvider. -->
+        <extensionPoint qualifiedName="org.inferna.core.licenseProvider"
+                         interface="org.inferna.core.licensing.InfernaLicenseProvider"
+                         dynamic="true"/>
+    </extensionPoints>
+
     <extensions defaultExtensionNs="com.intellij">
+        <applicationService serviceInterface="org.inferna.core.licensing.InfernaLicenseService"
+                             serviceImplementation="org.inferna.core.licensing.InfernaLicenseServiceImpl"/>
+
         <!-- Safe post-startup execution (COMPONENTS_LOADED) -->
         <postStartupActivity implementation="org.inferna.core.InfernaStartupActivity"/>
 
@@ -32,5 +48,18 @@
                     factoryClass="org.inferna.dashboard.InfernaDashboardToolWindowFactory"
                     anchor="right"
                     secondary="false"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="org.inferna.core">
+        <!-- Open-core fallback: always present, always last. An inferna-pro plugin registers its
+             own licenseProvider with order="first" to become the active one with no code change here. -->
+        <licenseProvider implementation="org.inferna.core.licensing.DefaultInfernaLicenseProvider" order="last"/>
+    </extensions>
+
+    <!-- Without this, any plugin declaring <depends>org.jetbrains.kotlin</depends> is treated as
+         K1-only and the platform refuses to load it at all once K2 mode is active — regardless
+         of what the plugin's own bytecode actually references (UAST here is K1/K2-agnostic). -->
+    <extensions defaultExtensionNs="org.jetbrains.kotlin">
+        <supportsKotlinPluginMode supportsK2="true"/>
     </extensions>
 </idea-plugin>

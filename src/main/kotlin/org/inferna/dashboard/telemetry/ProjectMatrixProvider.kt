@@ -20,16 +20,17 @@
 
 package org.inferna.dashboard.telemetry
 
+import com.intellij.ide.highlighter.JavaFileType
+import com.intellij.openapi.fileTypes.FileTypeManager
 import com.intellij.openapi.project.Project
 import com.intellij.psi.search.FileTypeIndex
 import com.intellij.psi.search.ProjectScope
-import org.jetbrains.kotlin.idea.KotlinFileType
-import com.intellij.ide.highlighter.JavaFileType
-import com.intellij.openapi.fileTypes.FileTypeManager
 
 data class ProjectMatrixStats(
     val kotlinFiles: Int,
     val javaFiles: Int,
+    val scalaFiles: Int,
+    val groovyFiles: Int,
     val isMixedStubsOverhead: Boolean
 )
 
@@ -39,31 +40,24 @@ class ProjectMatrixProvider : BiometricProvider<ProjectMatrixStats> {
 
     override fun scan(project: Project): ProjectMatrixStats {
         val scope = ProjectScope.getContentScope(project)
-        val kotlinCount = FileTypeIndex.getFiles(KotlinFileType.INSTANCE, scope).size
+        val fileTypeManager = FileTypeManager.getInstance()
+        // Looked up by extension rather than `org.jetbrains.kotlin.idea.KotlinFileType` on purpose:
+        // any reference into that internal package makes the Kotlin plugin's own loader flag this
+        // whole plugin "incompatible with Kotlin in K2 mode" and refuse to load it at all.
+        val kotlinCount = FileTypeIndex.getFiles(fileTypeManager.getFileTypeByExtension("kt"), scope).size
         val javaCount = FileTypeIndex.getFiles(JavaFileType.INSTANCE, scope).size
+        val scalaCount = FileTypeIndex.getFiles(fileTypeManager.getFileTypeByExtension("scala"), scope).size
+        val groovyCount = FileTypeIndex.getFiles(fileTypeManager.getFileTypeByExtension("groovy"), scope).size
 
-        // Compilação em duas fases ocorre quando há presença relevante de ambos
-        val isMixed = kotlinCount > 0 && javaCount > 0
+        // Dual-phase (Kapt/stub) build overhead occurs whenever more than one JVM source dialect coexists
+        val isMixed = listOf(kotlinCount, javaCount, scalaCount, groovyCount).count { it > 0 } > 1
 
         return ProjectMatrixStats(
             kotlinFiles = kotlinCount,
             javaFiles = javaCount,
+            scalaFiles = scalaCount,
+            groovyFiles = groovyCount,
             isMixedStubsOverhead = isMixed
         )
-    }
-}
-
-class PolyglotMatrixScanner {
-
-    fun countScalaFiles(project: Project): Int {
-        val scope = ProjectScope.getContentScope(project)
-        val scalaType = FileTypeManager.getInstance().getFileTypeByExtension("scala")
-        return FileTypeIndex.getFiles(scalaType, scope).size
-    }
-
-    fun countGroovyFiles(project: Project): Int {
-        val scope = ProjectScope.getContentScope(project)
-        val groovyType = FileTypeManager.getInstance().getFileTypeByExtension("groovy")
-        return FileTypeIndex.getFiles(groovyType, scope).size
     }
 }

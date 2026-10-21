@@ -123,7 +123,7 @@ class InfernaDashboardToolWindowFactory : ToolWindowFactory, DumbAware {
             ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
             ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
         ).apply {
-            border = BorderFactory.createEmptyBorder()
+            border = BorderFactory.createEmptyBorder(4, 12, 4, 12)
             viewportBorder = null
             isOpaque = false
             viewport.isOpaque = false

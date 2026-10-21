@@ -41,20 +41,10 @@ repositories {
     }
 }
 
-val localIdeDir = providers.gradleProperty("localPlatformPath").orNull?.let { file(it) }
-    ?: file("/run/current-system/sw/bin/intellij-idea-oss").takeIf { it.exists() }?.let { binary ->
-        binary.toPath().toRealPath().parent?.parent?.toFile()?.takeIf { dir ->
-            dir.resolve("product-info.json").exists()
-        }
-    }
-    ?: file(".intellijPlatform/localPlatformArtifacts").takeIf { it.isDirectory }?.let { artifactsDir ->
-        artifactsDir.listFiles { f -> f.name.startsWith("localIde-") && f.name.endsWith(".xml") }
-            ?.firstNotNullOfOrNull { xml ->
-                Regex("""artifact name="([^"]+)"""").find(xml.readText())?.groupValues?.get(1)?.let { relPath ->
-                    File("/", relPath).takeIf { dir -> dir.resolve("product-info.json").exists() }
-                }
-            }
-    }
+apply(from = "gradle/scripts/local-ide.gradle.kts")
+
+@Suppress("UNCHECKED_CAST")
+val localIdeDir = project.extra["localIdeDir"] as File?
 
 dependencies {
     intellijPlatform {
@@ -68,11 +58,25 @@ dependencies {
         bundledPlugin("com.intellij.java")
         bundledPlugin("org.jetbrains.kotlin")
         bundledPlugin("com.intellij.properties")
-        bundledPlugin("org.intellij.groovy")
+
+        // Optional language-engine modules: each is an IntelliJ *content module* (see plugin.xml's
+        // <content><module name="..."/></content>), packaged as its own lib/modules/*.jar and
+        // activated by the platform only when its own optional <dependencies><plugin id="..."/></
+        // is satisfied. Each compiles against its own Marketplace/bundled plugin in isolation, so
+        // neither leaks onto this project's classpath — a missing Scala/Groovy plugin on the
+        // user's IDE can never throw ClassNotFoundException/NoClassDefFoundError from this module.
+        pluginModule(implementation(project(":modules:scala")))
+        pluginModule(implementation(project(":modules:groovy")))
 
         pluginVerifier()
         zipSigner()
     }
+
+    // Plain dependency, deliberately NOT wrapped in pluginModule(...): :modules:api carries the
+    // bridge interfaces/DTOs (e.g. ScalaAnalyzerBridge) that this project's own always-loaded
+    // dashboard code imports directly, so its classes must land on the main plugin jar's
+    // classpath — not in a lib/modules/*.jar content module nothing in plugin.xml ever activates.
+    implementation(project(":modules:api"))
 
     testImplementation(kotlin("test"))
 }

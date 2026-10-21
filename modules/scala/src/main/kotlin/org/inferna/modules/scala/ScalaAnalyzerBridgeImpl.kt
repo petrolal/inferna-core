@@ -1,6 +1,6 @@
 /*
- * Inferna Visceral — Biopunk Theme, Splash Branding & Biometrics for IntelliJ IDEA
- * Copyright (C) 2026 Lucas Petrola <petrolalucas@gmail.com>
+ * Inferna Core - Biopunk JVM & Spring Developer Environment
+ * Copyright (C) 2026 Lucas Henrique Novais de Araujo Petrola <petrolalucas@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,28 +18,29 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package org.inferna.scala
+package org.inferna.modules.scala
 
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiManager
 import com.intellij.psi.PsiRecursiveElementWalkingVisitor
 import com.intellij.psi.search.FileTypeIndex
 import com.intellij.psi.search.ProjectScope
-import com.intellij.psi.PsiManager
+import org.inferna.scala.DeepScalaStats
+import org.inferna.scala.ScalaAnalyzerBridge
 import org.jetbrains.plugins.scala.ScalaFileType
 import org.jetbrains.plugins.scala.lang.psi.api.statements.ScFunction
 import org.jetbrains.plugins.scala.lang.psi.api.toplevel.typedef.ScClass
 import org.jetbrains.plugins.scala.lang.psi.api.toplevel.typedef.ScObject
 
-data class ScalaAstMetrics(
-    val objectSingletons: Int,
-    val caseClasses: Int,
-    val implicitOrGivenDefs: Int
-)
+/**
+ * Real `ScClass`/`ScObject`/`ScFunction` AST walk. This class is only ever classloaded when
+ * `org.intellij.scala` is active, since it's registered exclusively through the optional
+ * `inferna-scala.xml` descriptor — never referenced from the always-loaded core.
+ */
+class ScalaAnalyzerBridgeImpl : ScalaAnalyzerBridge {
 
-class ScalaAstInspector {
-
-    fun inspectProject(project: Project): ScalaAstMetrics {
+    override fun inspectProject(project: Project): DeepScalaStats {
         val scope = ProjectScope.getContentScope(project)
         val scalaFiles = FileTypeIndex.getFiles(ScalaFileType.INSTANCE, scope)
         val psiManager = PsiManager.getInstance(project)
@@ -55,9 +56,7 @@ class ScalaAstInspector {
                 override fun visitElement(element: PsiElement) {
                     when (element) {
                         is ScObject -> singletonObjects++
-                        is ScClass -> {
-                            if (element.isCase) caseClasses++
-                        }
+                        is ScClass -> if (element.isCase) caseClasses++
                         is ScFunction -> {
                             // Detect Scala 2 implicits and Scala 3 givens
                             if (element.hasModifierProperty("implicit") || element.text.startsWith("given")) {
@@ -70,7 +69,7 @@ class ScalaAstInspector {
             })
         }
 
-        return ScalaAstMetrics(
+        return DeepScalaStats(
             objectSingletons = singletonObjects,
             caseClasses = caseClasses,
             implicitOrGivenDefs = implicitsCount
